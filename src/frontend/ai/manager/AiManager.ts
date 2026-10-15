@@ -11,6 +11,7 @@ import { newToast } from "../../utils/common"
 import { Main } from "../../../types/IPC/Main"
 import { requestMain } from "../../IPC/main"
 import { getLLMManager } from "../llm/llmManager"
+import { logDecisionDeduped } from "../logging/decisionLog"
 import { BibleCacheManager } from "../scripture/BibleCacheManager"
 import { detectBibleVersion } from "../scripture/BibleVersionDetector"
 import { isReferenceWithin } from "../scripture/references"
@@ -31,7 +32,7 @@ export class AiManager {
         if (isCancelled()) return
 
         if (stringMatch) {
-            this.newMatch(stringMatch)
+            this.newMatch(stringMatch, chunk.chunkWithOverlap)
             this.lastMatch = Date.now()
             return
         }
@@ -41,7 +42,7 @@ export class AiManager {
 
         // embedding matches are suggestions only (enforced again in shouldAutoPlay)
         if (embedMatch) {
-            this.newMatch(embedMatch)
+            this.newMatch(embedMatch, chunk.chunkWithOverlap)
             this.lastMatch = Date.now()
             return
         }
@@ -54,7 +55,7 @@ export class AiManager {
         // only report to LLM if nothing is auto detected
         const llmMatch = await llmManager.detectMatch(chunk)
         if (llmMatch) {
-            this.newMatch(llmMatch)
+            this.newMatch(llmMatch, chunk.chunkWithOverlap)
             this.lastMatch = Date.now()
         }
     }
@@ -114,7 +115,7 @@ export class AiManager {
                 const otherMatch = await this.bibleDetection(id, textChunk, isCancelled)
                 if (otherMatch?.confidence && otherMatch.confidence > highestConfidence) {
                     highestConfidence = otherMatch.confidence
-                    this.newMatch({ ...otherMatch, scriptureIsNewTranslation: true })
+                    this.newMatch({ ...otherMatch, scriptureIsNewTranslation: true }, textChunk)
                 }
             })
         )
@@ -153,11 +154,16 @@ export class AiManager {
 
     /////
 
-    static newMatch(match: MatchResult) {
+    static newMatch(match: MatchResult, heard = "") {
         if (match.type === "empty" || !match.content) return
-        if (match.type === "scripture" && AiManager.liveContent === match.content) return
-
         if (match.type !== "scripture" && match.type !== "scripture_version") return // WIP only scripture is implemented
+
+        const base = { heard, detector: match.detector, ref: match.content, confidence: match.confidence, translation: match.scriptureTranslation }
+
+        if (match.type === "scripture" && AiManager.liveContent === match.content) {
+            logDecisionDeduped({ ...base, action: "suppressed", reason: "already_live" })
+            return
+        }
 
         let suggestionDraft: any = {
             id: uid(5),
@@ -167,24 +173,32 @@ export class AiManager {
         }
         if (match.scriptureIsNewTranslation) suggestionDraft.scriptureTranslation = match.scriptureTranslation
 
-        const trigger = () => this.triggerMatchAction(match)
+        // user approvals are logged as overrides; auto-present calls triggerMatchAction directly
+        const trigger = () => {
+            logDecisionDeduped({ ...base, action: "override_presented" })
+            this.triggerMatchAction(match)
+        }
 
-        if (this.shouldAutoPlay(match)) {
-            const suggestion = { ...suggestionDraft, action: "presented" }
+        if (match.type === "scripture") {
+            const decision = this.autoPlayDecision(match)
+            if (decision.play) {
+                const suggestion = { ...suggestionDraft, action: "presented" }
+                this.addSuggestion(suggestion)
+
+                console.info(`Auto-playing ${match.type}:`, match.content)
+                logDecisionDeduped({ ...base, action: "presented", reason: decision.reason })
+                this.triggerMatchAction(match)
+                return
+            }
+
+            const suggestion = { ...suggestionDraft, action: "present", trigger }
+            logDecisionDeduped({ ...base, action: "suggested", reason: decision.reason })
             this.addSuggestion(suggestion)
-
-            console.info(`Auto-playing ${match.type}:`, match.content)
-            trigger()
             return
         }
 
-        if (match.type === "scripture_version") {
-            const suggestion = { ...suggestionDraft, action: "open_scripture", trigger }
-            this.addSuggestion(suggestion)
-            return
-        }
-
-        const suggestion = { ...suggestionDraft, action: "present", trigger }
+        const suggestion = { ...suggestionDraft, action: "open_scripture", trigger }
+        logDecisionDeduped({ ...base, action: "suggested", reason: "version_switch" })
         this.addSuggestion(suggestion)
     }
 
@@ -199,30 +213,37 @@ export class AiManager {
     }
 
     private static MAX_AUTO_PLAY_INTERVAL = 30000
-    private static shouldAutoPlay(match: MatchResult): boolean {
+    // the same verse is not auto-shown twice within the cooldown (suggestions still appear)
+    private static REPEAT_COOLDOWN_MS = 5 * 60 * 1000
+    private static lastPresented: { content: string; at: number } | null = null
+
+    private static autoPlayDecision(match: MatchResult): { play: boolean; reason: string } {
         // embedding paraphrase matches are suggestions only, never auto-displayed
-        if (match.suggestOnly) return false
+        if (match.suggestOnly) return { play: false, reason: "suggest_only" }
+        if (match.type === "scripture_version") return { play: false, reason: "version_switch" }
+        if (match.type !== "scripture") return { play: false, reason: "unsupported_type" } // WIP currently only auto-plays scripture matches
 
-        if (match.confidence <= 95 && this.alreadySuggested(match)) return false
-
-        if (match.type === "scripture_version") return false
-        if (match.type !== "scripture") return false // WIP currently only auto-plays scripture matches
-
-        if (match.type === "scripture" && match.scriptureIsNewTranslation) return false
+        if (match.scriptureIsNewTranslation) return { play: false, reason: "new_translation" }
 
         // never auto-play low confidence matches
-        if (match.confidence <= 50) return false
+        if (match.confidence <= 50) return { play: false, reason: "low_confidence" }
 
         const now = Date.now()
+        if (this.lastPresented && this.lastPresented.content === match.content && now - this.lastPresented.at < this.REPEAT_COOLDOWN_MS) {
+            return { play: false, reason: "repeat_cooldown" }
+        }
+
         // skip if the output was manually updated recently
-        if (this.lastOutputUpdate && now - this.lastOutputUpdate < this.MAX_AUTO_PLAY_INTERVAL) return false
+        if (this.lastOutputUpdate && now - this.lastOutputUpdate < this.MAX_AUTO_PLAY_INTERVAL) return { play: false, reason: "manual_cooldown" }
 
         const confidence = get(ai)[match.type]?.confidence || "ask"
-        if (confidence === "ask") return false
+        if (confidence === "ask") return { play: false, reason: "ask_mode" }
+
+        if (match.confidence <= 95 && this.alreadySuggested(match)) return { play: false, reason: "already_suggested" }
 
         const autoPlay = match.confidence > this.getConfidenceScore(confidence)
         if (autoPlay) this.listenToOutput()
-        return autoPlay
+        return autoPlay ? { play: true, reason: `auto_${confidence}` } : { play: false, reason: `below_${confidence}_threshold` }
     }
 
     private static getConfidenceScore(confidence: ConfidenceLevels): number {
@@ -237,6 +258,7 @@ export class AiManager {
         if (match.type === "scripture_version") {
             if (match.scriptureTranslation) setActiveScripture(match.scriptureTranslation)
         } else if (match.type === "scripture") {
+            this.lastPresented = { content: match.content, at: Date.now() }
             startScripture({ reference: match.content })
             this.outputUpdate(match.content)
         }

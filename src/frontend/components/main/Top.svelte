@@ -1,8 +1,9 @@
 <script lang="ts">
     import { slide } from "svelte/transition"
-    import { activeEdit, activePage, activeProfile, activeProject, activeShow, cloudUsers, dictionary, drawSettings, drawTool, os, outputDisplay, outputs, paintCache, profiles, saved, settingsTab, shows } from "../../stores"
+    import { activeEdit, activePage, activeProfile, activeProject, activeShow, ai, cloudUsers, dictionary, drawSettings, drawTool, os, outputDisplay, outputs, paintCache, profiles, saved, settingsTab, shows, sttTempDisabled } from "../../stores"
     import { getCloudUsers } from "../../utils/cloudSync"
     import { translateText } from "../../utils/language"
+    import { SpeechToText } from "../../ai/stt/stt"
     import Icon from "../helpers/Icon.svelte"
     import { toggleOutputs } from "../helpers/output"
     import T from "../helpers/T.svelte"
@@ -112,6 +113,11 @@
         <TopButton id="stage" />
     </span>
     <span style="width: var(--navigation-width);justify-content: flex-end;">
+        {#if $ai.enabled}
+            <Button id="ai_listen_button" title={translateText($sttTempDisabled ? "ai.resume_listening" : "ai.pause_listening")} on:click={() => SpeechToText.setPaused(!$sttTempDisabled)} red={$sttTempDisabled}>
+                <Icon id="microphone" size={1.6} white />
+            </Button>
+        {/if}
         <TopButton id="draw" red={$drawTool === "fill" || ($drawTool === "zoom" && $drawSettings.zoom?.size !== 100) || !!($drawTool === "paint" && $paintCache?.length)} hideLabel />
         {#if !settingsDisabled}
             <TopButton id="settings" hideLabel />

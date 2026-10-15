@@ -21,10 +21,11 @@ import { importFromClipboard } from "../converters/importHelpers"
 import { addSection } from "../converters/project"
 import { requestMain, sendMain } from "../IPC/main"
 import { changeSlidesView } from "../show/slides"
-import { activeDrawerTab, activeEdit, activeFocus, activePage, activePopup, activeProject, activeStage, alertMessage, audioChannelsData, contextActive, drawer, editMode, focusedArea, focusMode, guideActive, media, os, outLocked, outputs, playingVideoState, projects, quickSearchActive, refreshEditSlide, selected, showRecentlyUsedProjects, special, spellcheck, styles, timelineRecordingAction, topContextActive } from "../stores"
+import { activeDrawerTab, activeEdit, activeFocus, activePage, activePopup, activeProject, activeStage, aiSmartAction, aiSuggestions, alertMessage, audioChannelsData, contextActive, drawer, editMode, focusedArea, focusMode, guideActive, media, os, outLocked, outputs, playingVideoState, projects, quickSearchActive, refreshEditSlide, selected, showRecentlyUsedProjects, special, spellcheck, styles, timelineRecordingAction, topContextActive } from "../stores"
 import { audioExtensions, imageExtensions, videoExtensions } from "../values/extensions"
 import { drawerTabs } from "../values/tabs"
 import { activeShow } from "./../stores"
+import { logDecisionDeduped } from "../ai/logging/decisionLog"
 import { hideDisplay, isOutputWindow, togglePanels, triggerFunction } from "./common"
 import { getAccess } from "./profile"
 import { triggerPopupSubmit } from "./popup"
@@ -57,6 +58,13 @@ const ctrlKeys = {
     t: () => togglePanels(),
     y: () => redo(),
     z: () => undo(),
+    // Clear: blank the output and drop pending AI suggestions (panic button)
+    k: () => {
+        clearAll()
+        aiSuggestions.set([])
+        aiSmartAction.set(null)
+        logDecisionDeduped({ action: "cleared", heard: "", reason: "hotkey" })
+    },
     "?": () => activePopup.set("shortcuts")
 }
 

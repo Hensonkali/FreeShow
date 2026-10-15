@@ -1874,6 +1874,8 @@
         "test_detector": "Detector",
         "test_verse": "Verse",
         "test_confidence": "Confidence",
-        "test_translation": "Translation"
+        "test_translation": "Translation",
+        "pause_listening": "Pause AI listening",
+        "resume_listening": "Resume AI listening"
     }
 }

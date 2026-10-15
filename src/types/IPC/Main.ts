@@ -8,7 +8,7 @@ import type { PCOFolderTreeNode } from "../../electron/contentProviders/planning
 import type { _store } from "../../electron/data/store"
 import type { EncoderDetection } from "../../electron/streaming/encoderDetection"
 import type { TimecodeMode } from "../../electron/timecode/timecode"
-import type { AIProviderId, AiSetupOptions, EmbeddingQueryResult, EngineStatus } from "../ai/Ai"
+import type { AIProviderId, AiDecisionLog, AiSetupOptions, EmbeddingQueryResult, EngineStatus } from "../ai/Ai"
 import type { SttEngineOptions } from "../ai/AiSettings"
 import type { ErrorLog, FileFolder, LessonsData, LyricSearchResult, MainFilePaths, Media, MediaCodecInfo, OS, SpotifyState, Subtitle } from "../Main"
 import type { Output } from "../Output"
@@ -196,7 +196,8 @@ export enum Main {
     AI_EMBED_STATUS = "AI_EMBED_STATUS",
     AI_EMBED_QUERY = "AI_EMBED_QUERY",
     AI_EMBED_INDEX = "AI_EMBED_INDEX",
-    AI_EMBED_DOWNLOAD = "AI_EMBED_DOWNLOAD"
+    AI_EMBED_DOWNLOAD = "AI_EMBED_DOWNLOAD",
+    AI_LOG = "AI_LOG"
 }
 
 export interface MainSendPayloads {
@@ -314,6 +315,7 @@ export interface MainSendPayloads {
     [Main.AI_EMBED_QUERY]: { text: string; bibleId: string; name: string; topK?: number }
     [Main.AI_EMBED_INDEX]: { bibleId: string; name: string }
     [Main.AI_EMBED_DOWNLOAD]: undefined
+    [Main.AI_LOG]: AiDecisionLog
 }
 
 export interface MainReturnPayloads {

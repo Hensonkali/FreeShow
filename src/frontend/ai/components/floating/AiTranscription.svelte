@@ -6,6 +6,7 @@
     import Center from "../../../components/system/Center.svelte"
     import { aiSmartAction, aiSttStatus, aiSuggestions, outLocked, scriptures, sttTranscript } from "../../../stores"
     import { translateText } from "../../../utils/language"
+    import { logDecisionDeduped } from "../../logging/decisionLog"
     import { Transcript } from "../../stt/transcript"
     import ConfidenceMeter from "./ConfidenceMeter.svelte"
 
@@ -41,6 +42,8 @@
     $: suggestions = $aiSuggestions
 
     function removeSuggestion(id: string) {
+        const removed = $aiSuggestions.find((item) => item.id === id)
+        if (removed) logDecisionDeduped({ heard: "", ref: removed.content, confidence: removed.confidence, action: "dismissed", reason: "user_removed" })
         aiSmartAction.update((cur) => (cur?.id === id ? null : cur))
         aiSuggestions.update((list) => list.filter((item) => item.id !== id))
     }
@@ -115,6 +118,7 @@
                             title="main.open"
                             style="padding: 6px;"
                             on:click={() => {
+                                logDecisionDeduped({ heard: "", ref: suggestion.content, confidence: suggestion.confidence, action: "override_opened", reason: "user_opened" })
                                 startScripture({ id: suggestion.scriptureTranslation, reference: suggestion.content, play: false })
                             }}
                         />

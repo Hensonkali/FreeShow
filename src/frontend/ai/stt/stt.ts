@@ -1,7 +1,7 @@
 import { get, writable } from "svelte/store"
 import { Main } from "../../../types/IPC/Main"
 import { requestMain, sendMain } from "../../IPC/main"
-import { ai } from "../../stores"
+import { ai, sttTempDisabled } from "../../stores"
 
 export const audioLevelStore = writable<number>(0.0)
 
@@ -101,6 +101,14 @@ export class SpeechToText {
         this.sessionToken++
         sendMain(Main.AI_LISTEN_STOP)
         this.stopCapture()
+    }
+
+    // one-click pause/resume shared by the top bar button and the AI widget:
+    // pausing cuts the microphone immediately; resuming is picked up
+    // reactively by AiFloating.syncSession (single resume path, no races)
+    static setPaused(paused: boolean) {
+        sttTempDisabled.set(paused)
+        if (paused) this.stopCapture()
     }
 
     static async resolveMicDeviceId(saved: string): Promise<string> {

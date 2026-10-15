@@ -32,6 +32,21 @@ export interface AiSuggestion {
     scriptureTranslation?: string
 }
 
+// decision log (Step 7: every AI detection decision is appended to a local file)
+
+export type AiDecisionAction = "presented" | "suggested" | "suppressed" | "override_presented" | "override_opened" | "dismissed" | "cleared"
+
+export interface AiDecisionLog {
+    t: number // timestamp
+    heard: string // transcript chunk that was analyzed
+    detector?: MatchResult["detector"]
+    ref?: string // verse reference, if any
+    confidence?: number
+    translation?: string
+    action: AiDecisionAction
+    reason?: string // why suppressed, or which gate passed
+}
+
 // verse embedding search (local onnx model, CPU only)
 
 export interface EmbeddingCandidate {

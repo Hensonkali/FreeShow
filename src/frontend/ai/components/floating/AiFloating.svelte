@@ -94,10 +94,11 @@
     }
 
     let sessionToken = 0
-    $: syncSession(isEnabled, micDeviceId, engineId)
-    async function syncSession(enabled: boolean | undefined, mic: string | undefined, engine: string) {
+    $: syncSession(isEnabled, micDeviceId, engineId, $sttTempDisabled)
+    async function syncSession(enabled: boolean | undefined, mic: string | undefined, engine: string, paused: boolean) {
         const currentLock = ++sessionToken
-        const shouldBeActive = Boolean(enabled && mic)
+        // a manual pause holds even if the microphone or engine changes
+        const shouldBeActive = Boolean(enabled && mic && !paused)
         const micChanged = (mic || "") !== lastMic
         const engineChanged = engine !== lastEngine
 
@@ -164,11 +165,10 @@
         if (turnOn) {
             if (isListening) return
             sttTempDisabled.set(false)
-            enableListening()
+            // syncSession resumes the session reactively (single resume path)
         } else {
             if (!isListening && state === "inactive") return
-            sttTempDisabled.set(true)
-            SpeechToText.stopCapture()
+            SpeechToText.setPaused(true)
             state = "inactive"
         }
     }
