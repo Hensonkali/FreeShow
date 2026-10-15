@@ -11,6 +11,8 @@ interface SttSettings {
     micDeviceId?: string
 
     engine?: string
+    // download missing speech models automatically in the background (default true)
+    autoDownloadModels?: boolean
     // per-engine options
     engineOptions?: {
         [key: string]: SttEngineOptions

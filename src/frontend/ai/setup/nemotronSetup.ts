@@ -14,6 +14,11 @@ export function downloadNemotronModel(): Promise<boolean | undefined> {
     return requestMain(Main.AI_SETUP, { action: "download", engineId: NEMOTRON_ENGINE_ID }, undefined, 60 * 60 * 1000)
 }
 
+// fire-and-forget variant for background downloads (no long-lived request to time out)
+export function startNemotronDownload(): void {
+    sendMain(Main.AI_SETUP, { action: "download", engineId: NEMOTRON_ENGINE_ID })
+}
+
 export function cancelNemotronDownload(): void {
     sendMain(Main.AI_SETUP, { action: "cancel", engineId: NEMOTRON_ENGINE_ID })
 }

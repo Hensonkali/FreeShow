@@ -1860,6 +1860,7 @@
         "model_retry": "Retry download",
         "model_cancel": "Cancel",
         "model_delete": "Delete model",
-        "model_download_failed": "Model download failed. Check your connection and try again."
+        "model_download_failed": "Model download failed. Check your connection and try again.",
+        "model_autodownload_started": "Downloading speech model in the background. Progress is shown in the Smart settings."
     }
 }
