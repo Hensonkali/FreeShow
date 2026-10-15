@@ -12,7 +12,9 @@ export interface MatchResult {
     content: string // "scripture" = reference (e.g., "Genesis 1:1")
     confidence: number // 1-100
     // which detector produced this match (for the debug/test panel)
-    detector?: "reference" | "standalone_verse" | "next_verse" | "content" | "version" | "llm"
+    detector?: "reference" | "standalone_verse" | "next_verse" | "content" | "version" | "llm" | "embedding"
+    // true = suggestion only, never auto-display (e.g. embedding paraphrase matches)
+    suggestOnly?: boolean
 
     scriptureMatchType?: "content"
     scriptureTranslation?: string
@@ -28,6 +30,20 @@ export interface AiSuggestion {
     trigger?: () => void
 
     scriptureTranslation?: string
+}
+
+// verse embedding search (local onnx model, CPU only)
+
+export interface EmbeddingCandidate {
+    ref: string // canonical reference, e.g. "John 3:16"
+    score: number // cosine similarity 0-1
+}
+
+export interface EmbeddingQueryResult {
+    modelReady: boolean
+    indexed: number
+    total: number
+    results: EmbeddingCandidate[]
 }
 
 // models

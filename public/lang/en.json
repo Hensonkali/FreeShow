@@ -1863,6 +1863,7 @@
         "model_delete": "Delete model",
         "model_download_failed": "Model download failed. Check your connection and try again.",
         "model_autodownload_started": "Downloading speech model in the background. Progress is shown in the Smart settings.",
+        "embed_autodownload_started": "Downloading verse embedding model in the background.",
         "test_open": "Test detection",
         "test_bible": "Bible",
         "test_heard": "Type a sentence as if it was heard",

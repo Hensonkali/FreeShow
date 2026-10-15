@@ -1,6 +1,8 @@
 import { get } from "svelte/store"
+import { Main } from "../../../types/IPC/Main"
 import { ai, mediaDownloads } from "../../stores"
 import { newToast } from "../../utils/common"
+import { requestMain, sendMain } from "../../IPC/main"
 import { resolveSttEngine } from "../stt/stt"
 import { getNemotronStatus, startNemotronDownload } from "./nemotronSetup"
 
@@ -15,6 +17,7 @@ export function ensureRequiredModels() {
     checkStarted = true
 
     void ensureNemotronModel()
+    void ensureEmbeddingModel()
 }
 
 async function ensureNemotronModel() {
@@ -56,4 +59,21 @@ function watchNemotronDownload() {
             unsubscribe()
         }
     })
+}
+
+// the embedding model is only needed while Smart listening is enabled
+async function ensureEmbeddingModel() {
+    if (!get(ai)?.enabled) return
+
+    let status = null
+    try {
+        status = await requestMain(Main.AI_EMBED_STATUS)
+    } catch {
+        return
+    }
+    if (!status || status.modelReady) return
+    if (get(mediaDownloads).get("embeddings")?.status === "downloading") return
+
+    newToast("ai.embed_autodownload_started")
+    sendMain(Main.AI_EMBED_DOWNLOAD)
 }

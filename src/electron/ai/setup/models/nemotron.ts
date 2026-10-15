@@ -14,7 +14,6 @@ const MODEL = NEMOTRON_MODEL
 export const NEMOTRON_VAD_FILE = "silero_vad.onnx"
 const NEMOTRON_VAD = MODEL.files.find((entry) => entry.file === NEMOTRON_VAD_FILE)
 const NEMOTRON_VAD_SHA256 = NEMOTRON_VAD?.sha256 || ""
-const VAD_MODEL_URL = NEMOTRON_VAD?.url || ""
 
 export const NEMOTRON_MODEL_FILES = Object.fromEntries(MODEL.files.filter((entry) => entry.file !== NEMOTRON_VAD_FILE).map((entry) => [entry.file.split(".")[0], { file: entry.file, sha256: entry.sha256 }]))
 export const NEMOTRON_MODEL_BYTES = MODEL.totalBytes

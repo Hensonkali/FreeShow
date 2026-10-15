@@ -8,10 +8,13 @@ import { getFirstActiveOutput } from "../../components/helpers/output"
 import { setActiveScripture } from "../../converters/bible"
 import { ai, aiSmartAction, aiSuggestions, drawerTabsData, outputs, scriptures } from "../../stores"
 import { newToast } from "../../utils/common"
+import { Main } from "../../../types/IPC/Main"
+import { requestMain } from "../../IPC/main"
 import { getLLMManager } from "../llm/llmManager"
 import { BibleCacheManager } from "../scripture/BibleCacheManager"
 import { detectBibleVersion } from "../scripture/BibleVersionDetector"
 import { isReferenceWithin } from "../scripture/references"
+import { selectEmbeddingSuggestion } from "../scripture/embeddingSuggest"
 
 export class AiManager {
     private static lastMatch: number = 0
@@ -29,6 +32,16 @@ export class AiManager {
 
         if (stringMatch) {
             this.newMatch(stringMatch)
+            this.lastMatch = Date.now()
+            return
+        }
+
+        const embedMatch = await this.embeddingDetection(chunk.chunkWithOverlap, isCancelled)
+        if (isCancelled()) return
+
+        // embedding matches are suggestions only (enforced again in shouldAutoPlay)
+        if (embedMatch) {
+            this.newMatch(embedMatch)
             this.lastMatch = Date.now()
             return
         }
@@ -120,6 +133,24 @@ export class AiManager {
         return match
     }
 
+    private static async embeddingDetection(textChunk: string, isCancelled?: () => boolean) {
+        const activeBibleId = get(drawerTabsData)?.scripture?.activeSubTab
+        if (!activeBibleId) return null
+
+        const scriptureData = get(scriptures)[activeBibleId]
+        if (!scriptureData || scriptureData?.api) return null
+
+        let result = null
+        try {
+            result = await requestMain(Main.AI_EMBED_QUERY, { text: textChunk, bibleId: activeBibleId, name: scriptureData.name, topK: 3 })
+        } catch {
+            return null
+        }
+        if (isCancelled?.() || !result?.results?.length) return null
+
+        return selectEmbeddingSuggestion(result.results, activeBibleId)
+    }
+
     /////
 
     static newMatch(match: MatchResult) {
@@ -169,6 +200,9 @@ export class AiManager {
 
     private static MAX_AUTO_PLAY_INTERVAL = 30000
     private static shouldAutoPlay(match: MatchResult): boolean {
+        // embedding paraphrase matches are suggestions only, never auto-displayed
+        if (match.suggestOnly) return false
+
         if (match.confidence <= 95 && this.alreadySuggested(match)) return false
 
         if (match.type === "scripture_version") return false

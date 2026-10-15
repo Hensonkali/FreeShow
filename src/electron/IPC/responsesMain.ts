@@ -9,6 +9,7 @@ import { Main } from "../../types/IPC/Main"
 import { ToMain } from "../../types/IPC/ToMain"
 import type { ErrorLog, LyricSearchResult, OS } from "../../types/Main"
 import { completeLLM, fetchProviderModels } from "../ai/llm/llmProviders"
+import { embedDownload, embedIndex, embedQuery, embedStatus } from "../ai/embed/embedResponses"
 import { setAiKey } from "../ai/setup/aiKeys"
 import { aiHandleLocalSetup, LocalModelManager } from "../ai/setup/LocalModelManager"
 import { aiGetModelStatus } from "../ai/setup/status"
@@ -287,7 +288,11 @@ export const mainResponses: MainResponses = {
     [Main.AI_GET_STATUS]: (data) => aiGetModelStatus(data),
     [Main.AI_SETUP]: (data) => aiHandleLocalSetup(data),
     [Main.AI_SET_KEY]: (data) => setAiKey(data),
-    [Main.AI_LLM_COMPLETE]: (data) => completeLLM(data)
+    [Main.AI_LLM_COMPLETE]: (data) => completeLLM(data),
+    [Main.AI_EMBED_STATUS]: (data) => embedStatus(data),
+    [Main.AI_EMBED_QUERY]: (data) => embedQuery(data),
+    [Main.AI_EMBED_INDEX]: (data) => embedIndex(data),
+    [Main.AI_EMBED_DOWNLOAD]: () => embedDownload()
 }
 
 /// ///////

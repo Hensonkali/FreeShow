@@ -8,7 +8,7 @@ import type { PCOFolderTreeNode } from "../../electron/contentProviders/planning
 import type { _store } from "../../electron/data/store"
 import type { EncoderDetection } from "../../electron/streaming/encoderDetection"
 import type { TimecodeMode } from "../../electron/timecode/timecode"
-import type { AIProviderId, AiSetupOptions, EngineStatus } from "../ai/Ai"
+import type { AIProviderId, AiSetupOptions, EmbeddingQueryResult, EngineStatus } from "../ai/Ai"
 import type { SttEngineOptions } from "../ai/AiSettings"
 import type { ErrorLog, FileFolder, LessonsData, LyricSearchResult, MainFilePaths, Media, MediaCodecInfo, OS, SpotifyState, Subtitle } from "../Main"
 import type { Output } from "../Output"
@@ -192,7 +192,11 @@ export enum Main {
     AI_GET_STATUS = "AI_GET_STATUS",
     AI_SETUP = "AI_SETUP",
     AI_SET_KEY = "AI_SET_KEY",
-    AI_LLM_COMPLETE = "AI_LLM_COMPLETE"
+    AI_LLM_COMPLETE = "AI_LLM_COMPLETE",
+    AI_EMBED_STATUS = "AI_EMBED_STATUS",
+    AI_EMBED_QUERY = "AI_EMBED_QUERY",
+    AI_EMBED_INDEX = "AI_EMBED_INDEX",
+    AI_EMBED_DOWNLOAD = "AI_EMBED_DOWNLOAD"
 }
 
 export interface MainSendPayloads {
@@ -306,6 +310,10 @@ export interface MainSendPayloads {
     [Main.AI_SETUP]: AiSetupOptions
     [Main.AI_SET_KEY]: { providerId: AIProviderId; key: string }
     [Main.AI_LLM_COMPLETE]: { providerId: AIProviderId; model: string; options: { systemPrompt?: string; prompt: string; jsonSchema?: any; temperature?: number; maxTokens?: number } }
+    [Main.AI_EMBED_STATUS]: { bibleId?: string; name?: string } | undefined
+    [Main.AI_EMBED_QUERY]: { text: string; bibleId: string; name: string; topK?: number }
+    [Main.AI_EMBED_INDEX]: { bibleId: string; name: string }
+    [Main.AI_EMBED_DOWNLOAD]: undefined
 }
 
 export interface MainReturnPayloads {
@@ -418,6 +426,10 @@ export interface MainReturnPayloads {
     [Main.AI_SETUP]: Promise<boolean>
     [Main.AI_SET_KEY]: Promise<boolean>
     [Main.AI_LLM_COMPLETE]: Promise<{ text: string; error?: string; code?: string; retryAfter?: number }>
+    [Main.AI_EMBED_STATUS]: Promise<{ modelReady: boolean; indexed: number; total: number }>
+    [Main.AI_EMBED_QUERY]: Promise<EmbeddingQueryResult>
+    [Main.AI_EMBED_INDEX]: Promise<boolean>
+    [Main.AI_EMBED_DOWNLOAD]: Promise<boolean>
 }
 
 ///////////
