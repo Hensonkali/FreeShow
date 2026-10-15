@@ -33,6 +33,9 @@ export interface AiSuggestion {
 export interface EngineStatus {
     ready: boolean
     error?: string
+    // machine-readable cause when not ready (missing = nothing downloaded yet,
+    // outdated = files changed upstream, unsupported = this device can't run it)
+    reason?: "missing" | "outdated" | "unsupported"
 
     localPath?: string | null
     downloadedModels?: string[]

@@ -31,11 +31,11 @@ export class DownloadManager {
     cancel(): void {
         if (!this.activeDownload) return
 
-        const { controller, partPath } = this.activeDownload
+        const { controller } = this.activeDownload
         this.activeDownload = null
 
         controller.abort()
-        this.safeUnlink(partPath)
+        // keep the .part file so the next download resumes instead of restarting
         this.sendProgress(0, 0, "error")
     }
 
@@ -62,7 +62,9 @@ export class DownloadManager {
 
         try {
             for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-                const resumeAt = attempt > 1 && fs.existsSync(partPath) ? (await fs.promises.stat(partPath)).size : 0
+                // resume from any leftover partial file, including from an earlier session
+                const resumeAt = fs.existsSync(partPath) ? (await fs.promises.stat(partPath)).size : 0
+                if (attempt === 1 && resumeAt > 0) console.info(`[${this.key}] Resuming download from byte ${resumeAt}: ${url}`)
 
                 const response = await net.fetch(url, {
                     signal: controller.signal,
@@ -109,7 +111,9 @@ export class DownloadManager {
                 return
             }
         } finally {
-            this.safeUnlink(partPath)
+            // keep a partial file on failure AND on cancel so the next download
+            // resumes instead of restarting; it disappears on success (rename),
+            // on failed checksum (completed file deleted), or on model delete
             if (this.activeDownload?.controller === controller) this.activeDownload = null
         }
     }

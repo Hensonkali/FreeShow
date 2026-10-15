@@ -1848,6 +1848,18 @@
         "confidence_ask": "Always ask",
         "confidence_highest": "If confident",
         "confidence_high": "If high confidence",
-        "confidence_medium": "If medium confidence"
+        "confidence_medium": "If medium confidence",
+        "model_missing": "The speech model is not downloaded yet (about 650 MB). Download it to enable transcription.",
+        "model_missing_short": "Speech model is not downloaded yet.",
+        "model_outdated": "The speech model is outdated and needs to be downloaded again.",
+        "model_unsupported": "Speech transcription is not supported on this device.",
+        "model_ready": "Speech model is downloaded and ready.",
+        "model_downloading": "Downloading speech model...",
+        "model_download": "Download model",
+        "model_update": "Update model",
+        "model_retry": "Retry download",
+        "model_cancel": "Cancel",
+        "model_delete": "Delete model",
+        "model_download_failed": "Model download failed. Check your connection and try again."
     }
 }
