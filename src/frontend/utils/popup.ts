@@ -3,6 +3,7 @@ import { get } from "svelte/store"
 import type { Popups } from "../../types/Main"
 import AiChat from "../ai/components/floating/AiChat.svelte"
 import AiModelManager from "../ai/components/popups/AiModelManager.svelte"
+import ScriptureTest from "../ai/components/popups/ScriptureTest.svelte"
 import About from "../components/main/popups/About.svelte"
 import Action from "../components/main/popups/Action.svelte"
 import ActionHistory from "../components/main/popups/ActionHistory.svelte"
@@ -185,6 +186,7 @@ export const popups: { [key in Popups]: ComponentType } = {
     sync_folders: SyncFolders,
     node_options: NodeOptions,
     ai_model_manager: AiModelManager,
+    ai_scripture_test: ScriptureTest,
     ai_chat: AiChat
 }
 

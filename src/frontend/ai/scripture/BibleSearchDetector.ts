@@ -37,7 +37,8 @@ export class BibleSearchDetector {
                 return {
                     type: "scripture",
                     content: `${chapterData.bookName} ${chapterData.chapterNumber}:1`,
-                    confidence: 75
+                    confidence: 75,
+                    detector: "reference"
                 }
             }
 
@@ -51,7 +52,8 @@ export class BibleSearchDetector {
             return {
                 type: "scripture",
                 content: referenceContent,
-                confidence: 98
+                confidence: 98,
+                detector: "reference"
             }
         }
 
@@ -97,7 +99,8 @@ export class BibleSearchDetector {
             return {
                 type: "scripture",
                 content: referenceContent,
-                confidence: isSequential ? 85 : 80
+                confidence: isSequential ? 85 : 80,
+                detector: "standalone_verse"
             }
         }
 
@@ -125,7 +128,7 @@ export class BibleSearchDetector {
         const chapterData = this.cacheData.referenceIndex.get(`${current.book.toLowerCase()} ${current.chapter}`)
         if (!chapterData || cue > chapterData.verseCount) return null
 
-        return { type: "scripture", content: `${chapterData.bookName} ${chapterData.chapterNumber}:${cue}`, confidence: 85 }
+        return { type: "scripture", content: `${chapterData.bookName} ${chapterData.chapterNumber}:${cue}`, confidence: 85, detector: "next_verse" }
     }
 
     // share of the verse's word weight that the spoken words account for
@@ -381,7 +384,7 @@ export class BibleSearchDetector {
         }
 
         return {
-            match: { type: "scripture", content: topMatch.ref, confidence, scriptureMatchType: "content" },
+            match: { type: "scripture", content: topMatch.ref, confidence, scriptureMatchType: "content", detector: "content" },
             hasAnyCandidates: true,
             isAmbiguous
         }

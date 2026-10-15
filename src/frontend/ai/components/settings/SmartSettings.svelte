@@ -1,5 +1,7 @@
 <script lang="ts">
+    import MaterialButton from "../../../components/inputs/MaterialButton.svelte"
     import MaterialToggleSwitch from "../../../components/inputs/MaterialToggleSwitch.svelte"
+    import T from "../../../components/helpers/T.svelte"
     import Tip from "../../../components/main/Tip.svelte"
     import { activePopup, ai, popupData, sttTempDisabled } from "../../../stores"
     import { translateText } from "../../../utils/language"
@@ -30,6 +32,10 @@
     <STTOptions />
 
     <AutoScriptureOptions />
+
+    <MaterialButton variant="outlined" icon="search" style="width: 100%;margin-top: 10px;" on:click={() => activePopup.set("ai_scripture_test")}>
+        <T id="ai.test_open" />
+    </MaterialButton>
 
     <!-- TODO: auto lyrics & more -->
 {:else}

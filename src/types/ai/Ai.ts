@@ -11,6 +11,8 @@ export interface MatchResult {
     type: "scripture" | "scripture_version" | "lyrics" | "quote" | "announcement" | "empty"
     content: string // "scripture" = reference (e.g., "Genesis 1:1")
     confidence: number // 1-100
+    // which detector produced this match (for the debug/test panel)
+    detector?: "reference" | "standalone_verse" | "next_verse" | "content" | "version" | "llm"
 
     scriptureMatchType?: "content"
     scriptureTranslation?: string

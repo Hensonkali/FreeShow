@@ -116,7 +116,7 @@ export class LLMManager {
         this.requestInProgress = false
 
         if (!result?.content) return null
-        return result
+        return { ...result, detector: "llm" }
     }
 
     // --- Chat Helper ---

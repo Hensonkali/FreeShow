@@ -46,7 +46,8 @@ export async function detectBibleVersion(textChunk: string, isCancelled?: () => 
                 content: displayName,
                 confidence: candidate.isShort ? 85 : 95,
                 scriptureTranslation: candidate.id,
-                scriptureIsNewTranslation: true
+                scriptureIsNewTranslation: true,
+                detector: "version"
             }
         }
     }

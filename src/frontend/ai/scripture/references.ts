@@ -45,7 +45,8 @@ export function normalizeReferences(text: string, cacheData: BibleCacheData): st
     })
 
     // 8. Standard spoken reference conversion: "Mark chapter 8 and 22", "Mark 8 verse 22" or "Mark 8 and 22" -> "Mark 8:22"
-    const standardRefRegex = new RegExp(`\\b([1-3]?\\s*[\\p{L}]+?)(?:\\s+(?:${CHAPTER_PATTERN}))?\\s+(\\d+)\\s+((?:${JOINER_PATTERN})|(?:${VERSE_PATTERN}))\\s+(\\d+)(?:\\s*(?:[-–—]|${RANGE_PATTERN})\\s*(\\d+))?\\b`, "giu")
+    // (the digit prefix owns its space so the match never swallows the separator before the book: "in John 3" keeps its space)
+    const standardRefRegex = new RegExp(`\\b((?:[1-3]\\s+)?[\\p{L}]+?)(?:\\s+(?:${CHAPTER_PATTERN}))?\\s+(\\d+)\\s+((?:${JOINER_PATTERN})|(?:${VERSE_PATTERN}))\\s+(\\d+)(?:\\s*(?:[-–—]|${RANGE_PATTERN})\\s*(\\d+))?\\b`, "giu")
     normalized = normalized.replace(standardRefRegex, (match, book, chap, joiner, vStart, vEnd) => {
         const cleanBook = book.trim().replace(new RegExp(`\\s+(?:${CHAPTER_PATTERN})$`, "iu"), "")
         const joinerStr = (joiner || "").toLowerCase()

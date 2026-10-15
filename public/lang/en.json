@@ -580,6 +580,7 @@
         "quit": "Quit without saving",
         "save_quit": "Save & Quit",
         "ai_model_manager": "Manage models",
+        "ai_scripture_test": "Test scripture detection",
         "ai_chat": "Chat"
     },
     "confirm": {
@@ -1861,6 +1862,17 @@
         "model_cancel": "Cancel",
         "model_delete": "Delete model",
         "model_download_failed": "Model download failed. Check your connection and try again.",
-        "model_autodownload_started": "Downloading speech model in the background. Progress is shown in the Smart settings."
+        "model_autodownload_started": "Downloading speech model in the background. Progress is shown in the Smart settings.",
+        "test_open": "Test detection",
+        "test_bible": "Bible",
+        "test_heard": "Type a sentence as if it was heard",
+        "test_current_ref": "Currently displayed reference (optional)",
+        "test_detect": "Detect",
+        "test_no_bible": "Import a local Bible first to test detection.",
+        "test_no_match": "No verse detected.",
+        "test_detector": "Detector",
+        "test_verse": "Verse",
+        "test_confidence": "Confidence",
+        "test_translation": "Translation"
     }
 }

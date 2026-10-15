@@ -6,6 +6,7 @@
     import T from "../../../components/helpers/T.svelte"
     import Title from "../../../components/input/Title.svelte"
     import MaterialButton from "../../../components/inputs/MaterialButton.svelte"
+    import MaterialDropdown from "../../../components/inputs/MaterialDropdown.svelte"
     import Tip from "../../../components/main/Tip.svelte"
     import { ai, mediaDownloads } from "../../../stores"
     import { downloadNemotronModel } from "../../setup/nemotronSetup"
