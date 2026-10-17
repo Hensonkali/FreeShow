@@ -33,6 +33,11 @@
 
     <AutoScriptureOptions />
 
+    <MaterialToggleSwitch label={translateText("ai.shadow_mode")} checked={$ai.shadowMode} on:change={(e) => updateValue("shadowMode", e.detail)} />
+    {#if $ai.shadowMode}
+        <Tip type="info" value="ai.shadow_mode_hint" top={10} />
+    {/if}
+
     <MaterialButton variant="outlined" icon="search" style="width: 100%;margin-top: 10px;" on:click={() => activePopup.set("ai_scripture_test")}>
         <T id="ai.test_open" />
     </MaterialButton>

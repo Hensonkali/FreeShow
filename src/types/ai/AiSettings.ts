@@ -3,6 +3,9 @@ export interface AiSettings {
     stt?: SttSettings
     llm?: LlmSettings
 
+    // shadow mode: detect and log, but never display anything on the output
+    shadowMode?: boolean
+
     scripture?: AiScriptureSettings
 }
 

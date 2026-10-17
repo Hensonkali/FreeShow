@@ -280,6 +280,9 @@ export class AiManager {
     private static lastPresented: { content: string; at: number } | null = null
 
     private static autoPlayDecision(match: MatchResult): { play: boolean; reason: string } {
+        // shadow mode: detect and log, never display (rehearse on recorded sermons)
+        if (get(ai)?.shadowMode) return { play: false, reason: "shadow_mode" }
+
         // embedding paraphrase matches are suggestions only, never auto-displayed
         if (match.suggestOnly) return { play: false, reason: "suggest_only" }
         if (match.type === "scripture_version") return { play: false, reason: "version_switch" }
