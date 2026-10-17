@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { BibleCacheData } from "./BibleCacheManager"
 import { BibleSearchDetector } from "./BibleSearchDetector"
+import { charGrams, isZuluBible } from "./ngrams"
 import { CHAPTER_PATTERN, ORDINAL_PREFIX_PATTERN, VERSE_PATTERN } from "./referenceDictionary"
 
 // Verse texts below are from the World English Bible (public domain),
@@ -34,8 +35,9 @@ function tokenizeText(text: string): string[] {
 
 // real chapter lengths: the detector validates verse numbers against
 // verseCount, so the miniature index must carry the true sizes
-const CHAPTER_SIZES: Record<string, number> = { "genesis 1": 31, "psalm 23": 6, "proverbs 3": 35, "john 1": 51, "john 3": 36, "romans 8": 39, "philippians 4": 23 }
-function buildTestCache(verses: TestVerse[]): BibleCacheData {
+const CHAPTER_SIZES: Record<string, number> = { "genesis 1": 31, "psalm 23": 6, "proverbs 3": 35, "john 1": 51, "john 3": 36, "romans 8": 39, "philippians 4": 23, "johane 3": 36, "izihlabelelo 23": 6, "eseyaya 53": 12 }
+function buildTestCache(verses: TestVerse[], ngram = false): BibleCacheData {
+    const tokenize = ngram ? (text: string) => charGrams(text) : (text: string) => tokenizeText(text)
     const versePool: string[] = []
     const verseToIdMap = new Map<string, number>()
     const referenceIndex = new Map<string, { bookName: string; chapterNumber: number; startVerseId: number; verseCount: number }>()
@@ -59,7 +61,7 @@ function buildTestCache(verses: TestVerse[]): BibleCacheData {
 
         const unique = [
             ...new Set(
-                tokenizeText(item.text).map((word) => {
+                tokenize(item.text).map((word) => {
                     let wordId = vocabToIdMap.get(word)
                     if (wordId === undefined) {
                         wordId = vocabPool.length
@@ -110,7 +112,7 @@ function buildTestCache(verses: TestVerse[]): BibleCacheData {
     const bookPattern = bookNames.map((b) => b.replace(/\s+/g, "\\s+")).join("|")
     const refRegex = new RegExp(`\\b((?:(?:[1-3]|${ORDINAL_PREFIX_PATTERN})\\s+)?(?:${bookPattern}))\\b\\s*(?:${CHAPTER_PATTERN})?\\s*(\\d+)(?:[\\s,:.]+(?:${VERSE_PATTERN})?\\s*(\\d+)(?:\\s*[-–—]\\s*(\\d+))?)?`, "iu")
 
-    return { versePool, verseToIdMap, referenceIndex, vocabPool, vocabToIdMap, wordIdf, wordPostingsOffsets, wordPostings, verseTokensOffsets, verseTokens, bookNames, refRegex, totalVerses }
+    return { versePool, verseToIdMap, referenceIndex, vocabPool, vocabToIdMap, wordIdf, wordPostingsOffsets, wordPostings, verseTokensOffsets, verseTokens, bookNames, refRegex, totalVerses, ngram }
 }
 
 const detector = new BibleSearchDetector(buildTestCache(TEST_VERSES))
@@ -175,5 +177,44 @@ describe("scripture detector - no match", () => {
 
     it("returns null for an unknown book", async () => {
         expect(await detector.search("hezekiah chapter four verse two", "")).toBeNull()
+    })
+})
+
+describe("scripture detector - Zulu n-gram matching", () => {
+    // synthetic agglutinative text: words share stems but change shape,
+    // which is exactly where whole-word matching fails
+    const zuluVerses: TestVerse[] = [
+        { book: "Johane", chapter: 3, verse: 16, text: "ngokuba unkulunkulu uthanda izwe" },
+        { book: "Izihlabelelo", chapter: 23, verse: 1, text: "unkulunkulu uyisigodi wami angeke ngingathwali" },
+        { book: "Eseyaya", chapter: 53, verse: 5, text: "waphangwa ngenxa yokuhlukumezeka kwethu" }
+    ]
+    const zuluDetector = new BibleSearchDetector(buildTestCache(zuluVerses, true))
+
+    it("matches a paraphrase whose word forms differ from the verse", async () => {
+        // "ukuthanda" (loving) vs the verse's "uthanda" (loves): same stem, different shape
+        const match = await zuluDetector.search("unkulunkulu ukuthanda izwe", "")
+        expect(match?.content).toBe("Johane 3:16")
+        expect(match?.scriptureMatchType).toBe("content")
+    })
+
+    it("still detects explicit Zulu references", async () => {
+        const match = await zuluDetector.search("johane isahluko 3 ivesi 16", "")
+        expect(match?.detector).toBe("reference")
+        expect(match?.content).toBe("Johane 3:16")
+    })
+})
+
+describe("ngram helpers", () => {
+    it("cuts 4-character grams", () => {
+        expect(charGrams("Johane")).toEqual(["joha", "ohan", "hane"])
+        expect(charGrams("iz", 4)).toEqual([])
+        // punctuation is dropped, words are joined by single spaces
+        expect(charGrams("Ngi-ya! ba~thanda", 4).slice(0, 3)).toEqual(["ngiy", "giya", "iya "])
+    })
+
+    it("detects Zulu Bibles by name", () => {
+        expect(isZuluBible("Zulu Bible")).toBe(true)
+        expect(isZuluBible(undefined, "isiZulu 1924")).toBe(true)
+        expect(isZuluBible("King James Version", "KJV")).toBe(false)
     })
 })

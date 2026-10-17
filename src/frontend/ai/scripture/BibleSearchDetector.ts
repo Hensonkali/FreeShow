@@ -1,5 +1,6 @@
 import type { MatchResult } from "../../../types/ai/Ai"
 import type { BibleCacheData } from "./BibleCacheManager"
+import { charGrams } from "./ngrams"
 import { normalizeMishearings } from "./mishearings"
 import { normalizeNumbers } from "./numbers"
 import { normalizeBookName, RANGE_PATTERN, VERSE_PATTERN } from "./referenceDictionary"
@@ -109,6 +110,7 @@ export class BibleSearchDetector {
 
     private tokenizeText(text: string): string[] {
         if (!text || typeof text !== "string") return []
+        if (this.cacheData.ngram) return charGrams(text)
         return text
             .toLowerCase()
             .replace(/['’`\-_]/g, " ")
@@ -199,7 +201,8 @@ export class BibleSearchDetector {
         // a few common words can all land in one verse, so a chunk this short is not a quote
         if (allTokens.length < 6) return null
 
-        const windowSizes = [20, 60, 80, 120]
+        // character n-grams cover ~1/6 of a word each, so windows scale up to match the same speech span
+        const windowSizes = this.cacheData.ngram ? [120, 360, 480, 720] : [20, 60, 80, 120]
         let bestResult: { match: MatchResult | null; hasAnyCandidates: boolean; isAmbiguous: boolean } | null = null
 
         for (let i = 0; i < windowSizes.length; i++) {

@@ -3,6 +3,7 @@ import { get } from "svelte/store"
 import { loadJsonBible } from "../../components/drawer/bible/scripture"
 import { scriptures } from "../../stores"
 import { BibleSearchDetector } from "./BibleSearchDetector"
+import { charGrams, isZuluBible } from "./ngrams"
 import { CHAPTER_PATTERN, ORDINAL_PREFIX_PATTERN, VERSE_PATTERN } from "./referenceDictionary"
 import { navFromReference } from "./voiceCommands"
 
@@ -20,6 +21,8 @@ export interface BibleCacheData {
     bookNames: string[]
     refRegex: RegExp | null
     totalVerses: number
+    // true when the cache tokenizes with character n-grams (Zulu-style languages)
+    ngram?: boolean
 }
 
 export class BibleCacheManager {
@@ -38,7 +41,9 @@ export class BibleCacheManager {
             const bible = (await loadJsonBible(bibleId))?.data
             if (!bible) return null
 
-            const cacheData = await this.buildCacheAsync(bible)
+            // Zulu (or similarly agglutinative) Bibles index with character n-grams
+            const useNgrams = isZuluBible(scriptureData.name, scriptureData.customName, scriptureData.id)
+            const cacheData = await this.buildCacheAsync(bible, useNgrams)
             const searchCache = new BibleSearchDetector(cacheData)
 
             this.rawCaches.set(bibleId, cacheData)
@@ -124,7 +129,8 @@ export class BibleCacheManager {
     /**
      * Non-blocking cache construction using yield-to-main-thread scheduling.
      */
-    private static async buildCacheAsync(bible: Bible): Promise<BibleCacheData> {
+    private static async buildCacheAsync(bible: Bible, ngram = false): Promise<BibleCacheData> {
+        const tokenize = ngram ? (text: string) => charGrams(text) : (text: string) => this.tokenizeText(text)
         const versePool: string[] = []
         const verseToIdMap: Map<string, number> = new Map()
         const referenceIndex: Map<string, { bookName: string; chapterNumber: number; startVerseId: number; verseCount: number }> = new Map()
@@ -162,7 +168,7 @@ export class BibleCacheManager {
                     totalVerses++
                     chapterVerseCount++
 
-                    const rawTokens = this.tokenizeText(verse.text)
+                    const rawTokens = tokenize(verse.text)
                     const uniqueWordIds = new Set<number>()
 
                     for (const word of rawTokens) {
@@ -261,7 +267,8 @@ export class BibleCacheManager {
             verseTokens,
             bookNames,
             refRegex,
-            totalVerses
+            totalVerses,
+            ngram
         }
     }
 }
