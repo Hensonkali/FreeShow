@@ -27,6 +27,24 @@ const REVERSE_TENS_KEYS = REVERSE_COMPOUND_TENS.join("|")
 const REVERSE_CONNECTORS = REVERSE_COMPOUND_CONNECTORS.join("|")
 const REVERSE_COMPOUND_REGEX = new RegExp(`\\b(${REVERSE_UNITS_KEYS})(?:${REVERSE_CONNECTORS})(${REVERSE_TENS_KEYS})\\b`, "giu")
 
+// Zulu compounds: the "and" glues onto the unit ("ishumi nesithupha" = 16,
+// "amashumi amabili nanye" = 21), so the standard compound regex misses them
+const ZULU_COMPOUND_TENS: Record<string, number> = {
+    ishumi: 10,
+    "amashumi amabili": 20,
+    "amashumi amathathu": 30,
+    "amashumi amane": 40,
+    "amashumi amahlanu": 50,
+    "amashumi ayisithupha": 60,
+    "amashumi ayisikhombisa": 70,
+    "amashumi ayisishiyagalombili": 80,
+    "amashumi ayisishiyagalolunye": 90
+}
+const ZULU_COMPOUND_UNITS: Record<string, number> = { nye: 1, sibili: 2, sithathu: 3, sine: 4, sihlanu: 5, sithupha: 6, sikhombisa: 7, sishiyagalombili: 8, sishiyagalolunye: 9 }
+const ZULU_COMPOUND_REGEX = new RegExp(`\\b(${Object.keys(ZULU_COMPOUND_TENS)
+    .sort((a, b) => b.length - a.length)
+    .join("|")})(?:\\s*(?:ne|na|nam|ama)\\s*|\\s+)(${Object.keys(ZULU_COMPOUND_UNITS).sort((a, b) => b.length - a.length).join("|")})\\b`, "giu")
+
 // Special complex multi-word numbers sorted by length descending
 const SPECIAL_KEYS = Object.keys(SPECIAL_COMPLEX_NUMBERS).sort((a, b) => b.length - a.length)
 const SPECIAL_COMPLEX_REGEX = new RegExp(`\\b(${SPECIAL_KEYS.join("|")})\\b`, "giu")
@@ -77,20 +95,27 @@ export function normalizeNumbers(text: string): string {
         return (tensVal + unitVal).toString()
     })
 
-    // 4. Normalize standard compound tens + units (e.g., "twenty five" -> "25", "vingt-trois" -> "23", "treinta y cinco" -> "35")
+    // 4. Normalize Zulu glued compounds ("ishumi nesithupha" -> "16", "amashumi amabili nanye" -> "21")
+    normalized = normalized.replace(ZULU_COMPOUND_REGEX, (_, tens, unit) => {
+        const tensVal = ZULU_COMPOUND_TENS[tens.toLowerCase()] || 0
+        const unitVal = ZULU_COMPOUND_UNITS[unit.toLowerCase()] || 0
+        return (tensVal + unitVal).toString()
+    })
+
+    // 5. Normalize standard compound tens + units (e.g., "twenty five" -> "25", "vingt-trois" -> "23", "treinta y cinco" -> "35")
     normalized = normalized.replace(COMPOUND_REGEX, (_, tens, units) => {
         const tensVal = TENS_WORDS[tens.toLowerCase()] || 0
         const unitsVal = UNIT_WORDS[units.toLowerCase()] || ORDINAL_UNIT_WORDS[units.toLowerCase()] || 0
         return (tensVal + unitsVal).toString()
     })
 
-    // 5. Convert single-word cardinal and ordinal numbers ("trois" -> "3", "seize" -> "16", "eighth" -> "8")
+    // 6. Convert single-word cardinal and ordinal numbers ("trois" -> "3", "seize" -> "16", "eighth" -> "8")
     normalized = normalized.replace(SINGLE_NUMBER_REGEX, (match) => {
         const val = ALL_NUMBER_WORDS[match.toLowerCase()]
         return val !== undefined ? val.toString() : match
     })
 
-    // 6. Normalize range keyword patterns (e.g., "1 through 6" -> "1-6", "1 à 6" -> "1-6", "1 bis 6" -> "1-6")
+    // 7. Normalize range keyword patterns (e.g., "1 through 6" -> "1-6", "1 à 6" -> "1-6", "1 bis 6" -> "1-6")
     normalized = normalized.replace(RANGE_REGEX, "$1-$2")
 
     return normalized

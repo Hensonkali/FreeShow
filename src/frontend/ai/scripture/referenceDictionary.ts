@@ -1,13 +1,13 @@
 // Spoken reference keyword dictionaries for primary Nemotron languages:
 // English, French, Spanish, German, Portuguese, Italian, Dutch, Norwegian
 
-export const CHAPTER_KEYWORDS = ["chapter", "chapitre", "capítulo", "capitulo", "kapitel", "capitolo", "hoofdstuk", "kapittel"]
+export const CHAPTER_KEYWORDS = ["chapter", "chapitre", "capítulo", "capitulo", "kapitel", "capitolo", "hoofdstuk", "kapittel", "isahluko", "isahluku", "isahlukho"]
 
-export const VERSE_KEYWORDS = ["verses", "verse", "versets", "verset", "versículos", "versículo", "versiculos", "versiculo", "versetti", "versetto", "versen", "vers"]
+export const VERSE_KEYWORDS = ["verses", "verse", "versets", "verset", "versículos", "versículo", "versiculos", "versiculo", "versetti", "versetto", "versen", "vers", "ivesi", "ivisi", "ives", "vesi"]
 
-export const JOINER_KEYWORDS = ["and", "et", "y", "und", "e", "en", "og"]
+export const JOINER_KEYWORDS = ["and", "et", "y", "und", "e", "en", "og", "ne", "na"]
 
-export const RANGE_KEYWORDS = ["through", "to", "jusqu'à", "hasta", "bis", "tot", "til", "à"]
+export const RANGE_KEYWORDS = ["through", "to", "jusqu'à", "hasta", "bis", "tot", "til", "à", "kuze", "kuye"]
 
 // Spoken ordinal prefixes for numbered books (e.g., "Premier Jean", "Første Johannes", "First Corinthians")
 export const BOOK_ORDINAL_PREFIX_MAP: Record<string, number> = {

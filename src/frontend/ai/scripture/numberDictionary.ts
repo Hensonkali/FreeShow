@@ -81,7 +81,30 @@ export const UNIT_WORDS: Record<string, number> = {
     sju: 7,
     syv: 7,
     åtte: 8,
-    ni: 9
+    ni: 9,
+
+    // Zulu (isiZulu) — spoken and short forms; "kune" (4) is long-form to avoid clashing with the "ne" (and) prefix
+    kunye: 1,
+    nye: 1,
+    inye: 1,
+    bili: 2,
+    bibili: 2,
+    kubili: 2,
+    thathu: 3,
+    thath: 3,
+    kuthathu: 3,
+    kune: 4,
+    hlanu: 5,
+    kuhlanu: 5,
+    sithupha: 6,
+    isithupha: 6,
+    situpha: 6,
+    khombisa: 7,
+    isikhombisa: 7,
+    shiyagalombili: 8,
+    isishiyagalombili: 8,
+    shiyagalolunye: 9,
+    isishiyagalolunye: 9
 }
 
 export const TEEN_WORDS: Record<string, number> = {
@@ -260,7 +283,18 @@ export const TENS_WORDS: Record<string, number> = {
     sytti: 70,
     søtti: 70,
     åtti: 80,
-    nitti: 90
+    nitti: 90,
+
+    // Zulu: "ishumi" (10), "amashumi amabili" (20) ... "amashumi ayisishiyagalolunye" (90)
+    ishumi: 10,
+    "amashumi amabili": 20,
+    "amashumi amathathu": 30,
+    "amashumi amane": 40,
+    "amashumi amahlanu": 50,
+    "amashumi ayisithupha": 60,
+    "amashumi ayisikhombisa": 70,
+    "amashumi ayisishiyagalombili": 80,
+    "amashumi ayisishiyagalolunye": 90
 }
 
 export const ORDINAL_UNIT_WORDS: Record<string, number> = {
@@ -348,7 +382,27 @@ export const ORDINAL_UNIT_WORDS: Record<string, number> = {
     syvende: 7,
     sjuende: 7,
     åttende: 8,
-    niende: 9
+    niende: 9,
+
+    // Zulu ordinals ("isahluko sesithathu" = chapter three, "ivesi yesithathu" = verse three)
+    okuqala: 1,
+    sokuqala: 1,
+    yesibili: 2,
+    yesithathu: 3,
+    yesine: 4,
+    yesihlanu: 5,
+    yesithupha: 6,
+    yesikhombisa: 7,
+    yesishiyagalombili: 8,
+    yesishiyagalolunye: 9,
+    sesibili: 2,
+    sesithathu: 3,
+    sesine: 4,
+    sesihlanu: 5,
+    sesithupha: 6,
+    sesikhombisa: 7,
+    sesishiyagalombili: 8,
+    sesishiyagalolunye: 9
 }
 
 // Spoken irregular compound numbers (French 70-99, Spanish 21-29, Italian contractions)
@@ -476,12 +530,15 @@ export const HUNDREDS_WORDS: Record<string, number> = {
     honderd: 100,
 
     // Norwegian
-    hundre: 100
+    hundre: 100,
+
+    // Zulu
+    ikhulu: 100
 }
 
-export const MULTILINGUAL_RANGE_WORDS = ["through", "to", "jusqu'à", "hasta", "bis", "tot", "til", "à"]
+export const MULTILINGUAL_RANGE_WORDS = ["through", "to", "jusqu'à", "hasta", "bis", "tot", "til", "à", "kuze", "kuye"]
 
-export const COMPOUND_CONNECTORS = ["and", "et", "y", "und", "e", "en", "og"]
+export const COMPOUND_CONNECTORS = ["and", "et", "y", "und", "e", "en", "og", "ne", "na"]
 
 export const REVERSE_COMPOUND_CONNECTORS = ["und", "en", "og"]
 

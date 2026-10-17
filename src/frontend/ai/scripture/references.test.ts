@@ -14,7 +14,11 @@ const mockCacheData: BibleCacheData = {
         ["johannes 3", { bookName: "Johannes", chapterNumber: 3, startVerseId: 165, verseCount: 36 }],
         ["john 3", { bookName: "John", chapterNumber: 3, startVerseId: 201, verseCount: 36 }],
         ["1 jean 1", { bookName: "1 Jean", chapterNumber: 1, startVerseId: 237, verseCount: 10 }],
-        ["1 johannes 1", { bookName: "1 Johannes", chapterNumber: 1, startVerseId: 247, verseCount: 10 }]
+        ["1 johannes 1", { bookName: "1 Johannes", chapterNumber: 1, startVerseId: 247, verseCount: 10 }],
+        // Zulu
+        ["johane 3", { bookName: "Johane", chapterNumber: 3, startVerseId: 257, verseCount: 36 }],
+        ["izihlabelelo 23", { bookName: "Izihlabelelo", chapterNumber: 23, startVerseId: 293, verseCount: 6 }],
+        ["eseyaya 53", { bookName: "Eseyaya", chapterNumber: 53, startVerseId: 299, verseCount: 12 }]
     ]),
     vocabPool: [],
     vocabToIdMap: new Map(),
@@ -23,9 +27,9 @@ const mockCacheData: BibleCacheData = {
     wordPostings: new Uint32Array(),
     verseTokensOffsets: new Uint32Array(),
     verseTokens: new Uint32Array(),
-    bookNames: ["Jean", "Romains", "Juan", "Johannes", "John", "1 Jean", "1 Johannes"],
+    bookNames: ["Jean", "Romains", "Juan", "Johannes", "John", "1 Jean", "1 Johannes", "Johane", "Izihlabelelo", "Eseyaya"],
     refRegex: null,
-    totalVerses: 300
+    totalVerses: 320
 }
 
 describe("normalizeReferences - Multilingual", () => {
@@ -93,5 +97,47 @@ describe("normalizeReferences - Multilingual", () => {
 
         // "Første Johannes 1:4"
         expect(normalizeReferences("Første Johannes 1:4", mockCacheData)).toBe("1 Johannes 1:4")
+    })
+})
+
+describe("normalizeReferences - Zulu (isiZulu)", () => {
+    // mixed speech as the recognizer might hear it
+    it("parses 'Johane 3 ivesi 16'", () => {
+        expect(normalizeReferences("Johane 3 ivesi 16", mockCacheData)).toBe("Johane 3:16")
+    })
+
+    it("parses chapter and verse words with digits", () => {
+        expect(normalizeReferences("Johane isahluko 3 ivesi 16", mockCacheData)).toBe("Johane 3:16")
+        // common mishearing of isahluko
+        expect(normalizeReferences("ujohane isahluku 3 ivesi 16", mockCacheData)).toBe("johane 3:16")
+    })
+
+    it("strips noun-class prefixes glued to book names", () => {
+        expect(normalizeReferences("uJohane 3 ivesi 16", mockCacheData)).toBe("Johane 3:16")
+        expect(normalizeReferences("kwaJohane isahluko 3 ivesi 16", mockCacheData)).toBe("Johane 3:16")
+
+        const numNorm = normalizeNumbers("eEseyaya amashumi amahlanu nesithathu ivesi")
+        expect(numNorm).toBe("eeseyaya 53 ivesi")
+        expect(normalizeReferences(numNorm, mockCacheData)).toContain("eseyaya 53")
+    })
+
+    it("converts spoken Zulu numbers in references", () => {
+        // "Johane isahluko sesithathu ivesi yishumi nesithupha" style speech:
+        // chapter three, verse sixteen
+        const numNorm = normalizeNumbers("ujohane isahluko sesithathu ivesi ishumi nesithupha")
+        expect(numNorm).toBe("ujohane isahluko 3 ivesi 16")
+        expect(normalizeReferences(numNorm, mockCacheData)).toBe("johane 3:16")
+    })
+
+    it("converts tens compounds in references", () => {
+        // Izihlabelelo (Psalms) chapter 23, verse "amashumi amabili nesithupha" (26)
+        const numNorm = normalizeNumbers("izihlabelelo 23 ivesi amashumi amabili nesithupha")
+        expect(numNorm).toBe("izihlabelelo 23 ivesi 26")
+        expect(normalizeReferences(numNorm, mockCacheData)).toBe("izihlabelelo 23:26")
+    })
+
+    it("parses Eseyaya (Isaiah) fifty three", () => {
+        const numNorm = normalizeNumbers("eseyaya amashumi amahlanu nesithathu")
+        expect(numNorm).toBe("eseyaya 53")
     })
 })

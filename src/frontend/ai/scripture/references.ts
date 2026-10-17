@@ -4,6 +4,15 @@ import { CHAPTER_PATTERN, JOINER_PATTERN, normalizeBookName, OF_PATTERN, ORDINAL
 export function normalizeReferences(text: string, cacheData: BibleCacheData): string {
     let normalized = text
 
+    // 0. Strip Zulu-style noun-class prefixes glued to book names ("uJohane" -> "Johane",
+    // "kwaJohane" -> "Johane"). Built from the imported Bible's own book names, so it works
+    // for any language and stays content-preserving (result is still a real book name).
+    for (const book of cacheData.bookNames || []) {
+        const clean = book.trim()
+        if (clean.length < 2) continue
+        normalized = normalized.replace(new RegExp(`\\b(?:kwa|ku|wa|u|e|i|o)(${escapeRegExp(clean)})\\b`, "giu"), "$1")
+    }
+
     // 1. Remove punctuation that breaks numbered books and normalize ordinal book prefixes (e.g., "1, john 4" or "first, john" -> "1 john")
     normalized = normalized.replace(new RegExp(`\\b([1-3]|${ORDINAL_PREFIX_PATTERN})\\s*[,.\\-_]\\s*([\\p{L}]+)`, "giu"), "$1 $2")
     normalized = normalized.replace(new RegExp(`\\b(${ORDINAL_PREFIX_PATTERN})\\s+([\\p{L}]+)`, "giu"), (match) => normalizeBookName(match))
@@ -121,6 +130,11 @@ function parseReference(ref: string) {
 // checks if containerRef is or has targetRef
 // isReferenceWithin("Matthew 7:1-2", "Matthew 7:1-6") = true
 // isReferenceWithin("Matthew 7:1-8", "Matthew 7:1-6") = false
+
+function escapeRegExp(text: string): string {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
 export function isReferenceWithin(containerRef: string, targetRef: string): boolean {
     const target = parseReference(targetRef)
     const container = parseReference(containerRef)
