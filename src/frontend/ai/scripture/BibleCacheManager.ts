@@ -4,6 +4,7 @@ import { loadJsonBible } from "../../components/drawer/bible/scripture"
 import { scriptures } from "../../stores"
 import { BibleSearchDetector } from "./BibleSearchDetector"
 import { CHAPTER_PATTERN, ORDINAL_PREFIX_PATTERN, VERSE_PATTERN } from "./referenceDictionary"
+import { navFromReference } from "./voiceCommands"
 
 export interface BibleCacheData {
     versePool: string[]
@@ -89,6 +90,25 @@ export class BibleCacheManager {
             return cache.versePool[verseId]
         }
         return null
+    }
+
+    /**
+     * Verse navigation for voice commands: "John 3:16" + 1 = "John 3:17",
+     * checked against the chapter's real verse count. Returns null at edges.
+     */
+    public static async navigate(bibleId: string, ref: string, delta: 1 | -1): Promise<string | null> {
+        await this.getCache(bibleId)
+        const cache = this.rawCaches.get(bibleId)
+        if (!cache) return null
+
+        const match = ref.match(/^((?:[1-3]\s+)?[\p{L}\s]+?)\s+(\d+):(\d+)/u)
+        if (!match) return null
+
+        const chapterData = cache.referenceIndex.get(`${match[1].trim().toLowerCase()} ${match[2]}`)
+        if (!chapterData) return null
+
+        const nav = navFromReference(ref, chapterData.verseCount, delta)
+        return nav ? nav.next : null
     }
 
     private static tokenizeText(text: string): string[] {

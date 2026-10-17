@@ -1876,6 +1876,7 @@
         "test_confidence": "Confidence",
         "test_translation": "Translation",
         "pause_listening": "Pause AI listening",
-        "resume_listening": "Resume AI listening"
+        "resume_listening": "Resume AI listening",
+        "command_no_scripture": "No scripture is on screen yet — nothing to advance."
     }
 }

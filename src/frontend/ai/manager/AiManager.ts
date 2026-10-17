@@ -16,6 +16,7 @@ import { BibleCacheManager } from "../scripture/BibleCacheManager"
 import { detectBibleVersion } from "../scripture/BibleVersionDetector"
 import { isReferenceWithin } from "../scripture/references"
 import { selectEmbeddingSuggestion } from "../scripture/embeddingSuggest"
+import { detectVoiceCommand, type InstalledTranslation } from "../scripture/voiceCommands"
 
 export class AiManager {
     private static lastMatch: number = 0
@@ -27,6 +28,14 @@ export class AiManager {
 
         const searchId = ++this.latestSearchId
         const isCancelled = () => searchId !== this.latestSearchId
+
+        // explicit voice commands execute immediately ("next verse", "give me NLT")
+        const commandHandled = await this.voiceCommandDetection(chunk.chunkWithOverlap, isCancelled)
+        if (isCancelled()) return
+        if (commandHandled) {
+            this.lastMatch = Date.now()
+            return
+        }
 
         const stringMatch = await this.stringDetection(chunk.chunkWithOverlap, isCancelled)
         if (isCancelled()) return
@@ -132,6 +141,59 @@ export class AiManager {
 
         match.scriptureTranslation = id
         return match
+    }
+
+    private static lastCommand: { signature: string; at: number } | null = null
+    private static async voiceCommandDetection(textChunk: string, isCancelled?: () => boolean): Promise<boolean> {
+        const installed = keysToID(get(scriptures))
+            .filter((a: any) => !a.api && !a.collection)
+            .map((a: any) => ({ id: a.id, name: a.name, customName: a.customName })) as InstalledTranslation[]
+
+        const command = detectVoiceCommand(textChunk, installed)
+        if (!command) return false
+
+        // chunk overlap repeats the last words: run each command once per 30 seconds
+        const now = Date.now()
+        const signature = JSON.stringify(command)
+        if (this.lastCommand && this.lastCommand.signature === signature && now - this.lastCommand.at < 30000) return true
+        this.lastCommand = { signature, at: now }
+
+        const heard = textChunk
+        const activeBibleId = get(drawerTabsData)?.scripture?.activeSubTab
+
+        if (command.command === "next_verse" || command.command === "previous_verse") {
+            if (!this.liveContent) {
+                newToast("ai.command_no_scripture")
+                logDecisionDeduped({ heard, action: "suppressed", reason: "no_live_scripture" })
+                return true
+            }
+
+            const delta = command.command === "next_verse" ? 1 : -1
+            const nextRef = activeBibleId ? await BibleCacheManager.navigate(activeBibleId, this.liveContent, delta) : null
+            if (!nextRef) {
+                logDecisionDeduped({ heard, ref: this.liveContent, action: "suppressed", reason: "verse_out_of_range" })
+                return true
+            }
+            if (isCancelled?.()) return true
+
+            this.lastPresented = { content: nextRef, at: Date.now() }
+            startScripture({ reference: nextRef })
+            this.outputUpdate(nextRef)
+            logDecisionDeduped({ heard, ref: nextRef, action: "presented", reason: "voice_command" })
+            return true
+        }
+
+        if (command.command === "translation") {
+            setActiveScripture(command.translationId)
+            newToast(`Switched to ${command.name}`)
+            logDecisionDeduped({ heard, ref: command.name, action: "presented", reason: "voice_command_translation" })
+            return true
+        }
+
+        // translation_missing: say so on screen instead of showing a wrong verse
+        newToast(`${command.name} is not installed`)
+        logDecisionDeduped({ heard, ref: command.name, action: "suppressed", reason: "translation_not_installed" })
+        return true
     }
 
     private static async embeddingDetection(textChunk: string, isCancelled?: () => boolean) {
