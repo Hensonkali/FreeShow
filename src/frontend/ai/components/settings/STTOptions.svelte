@@ -9,6 +9,7 @@
     import MaterialDropdown from "../../../components/inputs/MaterialDropdown.svelte"
     import Tip from "../../../components/main/Tip.svelte"
     import { ai, mediaDownloads } from "../../../stores"
+    import SwivurisoOptions from "../popups/SwivurisoOptions.svelte"
     import { downloadNemotronModel } from "../../setup/nemotronSetup"
     import { formatDownloadedMb, getDownloadPercent } from "../../setup/nemotronUiState"
     import { resolveSttEngine, SpeechToText } from "../../stt/stt"
@@ -88,6 +89,11 @@
     //     nemotron: { label: "Nemotron" }
     // }
     $: selectedEngine = $ai.stt?.engine || resolveSttEngine()
+
+    const sttEngineOptions = [
+        { value: "nemotron", label: "Nemotron" },
+        { value: "swivuriso", label: "Swivuriso" }
+    ]
 </script>
 
 <Title label="ai.transcription" icon="microphone" />
@@ -106,6 +112,12 @@
         <T id="ai.engine" />: <span style="font-weight: bold;">{sttEngines[selectedEngine]?.label}</span>
     </MaterialButton>
 </InputRow> -->
+
+<MaterialDropdown label="ai.engine" options={sttEngineOptions} value={selectedEngine} on:change={(e) => updateValue("engine", e.detail)} />
+
+{#if selectedEngine === "swivuriso"}
+    <SwivurisoOptions />
+{/if}
 
 {#if status?.ready}
     <MaterialDropdown label="midi.input" options={microphones} value={options.micDeviceId || ""} on:change={(e) => updateValue("micDeviceId", e.detail)} />

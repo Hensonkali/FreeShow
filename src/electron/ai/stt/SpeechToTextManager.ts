@@ -3,9 +3,14 @@ import { ToMain } from "../../../types/IPC/ToMain"
 import { sendToMain } from "../../IPC/main"
 import { LocalModelManager } from "../setup/LocalModelManager"
 import { NemotronTranscriber } from "./models/NemotronTranscriber"
+import { SwivurisoTranscriber } from "./models/SwivurisoTranscriber"
 import type { TranscriberSegment } from "./sttHelper"
 
-type SttEngine = NemotronTranscriber
+interface SttEngine {
+    start(): Promise<unknown>
+    pushAudio(buffer: Uint8Array): void
+    stop(): unknown
+}
 type SegmentListener = (segment: TranscriberSegment) => void
 
 const sanitizeError = (msg: string) => msg.replace(/\s+/g, " ").trim().slice(0, 200)
@@ -72,6 +77,12 @@ export class SpeechToText {
             const status = await LocalModelManager.getStatus("nemotron")
             if (!status.ready) return { error: status.error || "Nemotron could not be initialized" }
             return { transcriber: new NemotronTranscriber({ ...options }, this.onSegment, this.onError, this.onInterim) }
+        }
+
+        if (engine === "swivuriso") {
+            const status = await LocalModelManager.getStatus("swivuriso")
+            if (!status.ready) return { error: status.error || "Swivuriso is not set up yet" }
+            return { transcriber: new SwivurisoTranscriber({ ...options }, { onSegment: this.onSegment, onError: this.onError }) }
         }
 
         console.error(`Unknown STT engine: ${engine}`)

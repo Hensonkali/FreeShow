@@ -74,7 +74,24 @@ export const MINILM_MODEL: ManagedModel = {
     ]
 }
 
-export const MANAGED_MODELS: ManagedModel[] = [NEMOTRON_MODEL, MINILM_MODEL]
+// Swivuriso: Whisper large-v3-turbo fine-tune (MIT) by dsfsi-anv on the
+// Swivuriso South-African-languages dataset. Not auto-downloaded (3.24 GB);
+// see SWIVURISO_RESEARCH.md for the one-time conversion to whisper.cpp ggml.
+export const SWIVURISO_MODEL: ManagedModel = {
+    id: "swivuriso",
+    engine: "swivuriso",
+    label: "Swivuriso multilingual speech model (isiZulu + 6 more SA languages)",
+    source: "dsfsi-anv/za-anv-multilingual-whisper-v3-turbo (Whisper large-v3-turbo fine-tune)",
+    sourceUrl: "https://huggingface.co/dsfsi-anv/za-anv-multilingual-whisper-v3-turbo",
+    revision: "main",
+    license: "MIT",
+    licenseUrl: "https://huggingface.co/dsfsi-anv/za-anv-multilingual-whisper-v3-turbo",
+    totalBytes: 3235581408,
+    autoDownload: false,
+    files: [{ file: "model.safetensors", url: "https://huggingface.co/dsfsi-anv/za-anv-multilingual-whisper-v3-turbo/resolve/main/model.safetensors", sha256: "6d2cf738db827caaf0dd682c77f0d7a8c21ba060a4a395d13a273a87ec9d4d25", bytes: 3235581408 }]
+}
+
+export const MANAGED_MODELS: ManagedModel[] = [NEMOTRON_MODEL, MINILM_MODEL, SWIVURISO_MODEL]
 
 export function getManagedModel(engineId: string): ManagedModel | undefined {
     return MANAGED_MODELS.find((model) => model.engine === engineId && model.autoDownload)

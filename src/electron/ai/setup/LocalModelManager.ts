@@ -24,6 +24,7 @@ export class LocalModelManager {
     private static getManager(engineId: string) {
         // require lazily to avoid circular imports when models import these helpers
         if (engineId === "nemotron") return require("./models/nemotron").NemotronSetupManager
+        if (engineId === "swivuriso") return require("../stt/models/swivuriso").SwivurisoSetupManager
         return null
     }
 
@@ -55,7 +56,7 @@ export class LocalModelManager {
             return { ready: await manager.verifyModel?.(modelPath), localPath: modelPath }
         }
 
-        if (engineId === "nemotron") {
+        if (engineId === "nemotron" || engineId === "swivuriso") {
             if (manager.isPlatformSupported && !manager.isPlatformSupported()) {
                 return { ready: false, error: "Nemotron transcription is not supported on Intel Mac", reason: "unsupported" }
             }

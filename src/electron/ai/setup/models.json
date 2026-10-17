@@ -81,6 +81,26 @@
                     "bytes": 366
                 }
             ]
+        },
+        {
+            "id": "swivuriso",
+            "engine": "swivuriso",
+            "label": "Swivuriso multilingual speech model (isiZulu + 6 more SA languages)",
+            "source": "dsfsi-anv/za-anv-multilingual-whisper-v3-turbo (Whisper large-v3-turbo fine-tune)",
+            "sourceUrl": "https://huggingface.co/dsfsi-anv/za-anv-multilingual-whisper-v3-turbo",
+            "revision": "main",
+            "license": "MIT",
+            "licenseUrl": "https://huggingface.co/dsfsi-anv/za-anv-multilingual-whisper-v3-turbo",
+            "totalBytes": 3235581408,
+            "autoDownload": false,
+            "files": [
+                {
+                    "file": "model.safetensors",
+                    "url": "https://huggingface.co/dsfsi-anv/za-anv-multilingual-whisper-v3-turbo/resolve/main/model.safetensors",
+                    "sha256": "6d2cf738db827caaf0dd682c77f0d7a8c21ba060a4a395d13a273a87ec9d4d25",
+                    "bytes": 3235581408
+                }
+            ]
         }
     ]
 }

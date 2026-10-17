@@ -1877,6 +1877,10 @@
         "test_translation": "Translation",
         "pause_listening": "Pause AI listening",
         "resume_listening": "Resume AI listening",
-        "command_no_scripture": "No scripture is on screen yet — nothing to advance."
+        "command_no_scripture": "No scripture is on screen yet — nothing to advance.",
+        "swivuriso_ready": "Swivuriso engine is set up and ready.",
+        "swivuriso_missing": "Swivuriso needs a one-time setup: the whisper-cli binary and the converted model (see SWIVURISO_RESEARCH.md).",
+        "swivuriso_steps": "Build/convert once on another PC (free Colab is fine): copy whisper-cli.exe to bin\\swivuriso\\ and model-ggml.bin to bin\\swivuriso\\models\\. Everything then runs fully offline.",
+        "swivuriso_download_raw": "Download raw model (3.24 GB, resumable)"
     }
 }

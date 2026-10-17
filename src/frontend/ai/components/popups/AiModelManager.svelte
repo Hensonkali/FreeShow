@@ -10,6 +10,7 @@
     import LlmFiles from "./LlmFiles.svelte"
     import LlmOptions from "./LlmOptions.svelte"
     import NemotronOptions from "./NemotronOptions.svelte"
+    import SwivurisoOptions from "./SwivurisoOptions.svelte"
 
     const mode = $popupData.mode
     popupData.set({})
@@ -32,8 +33,8 @@
     }
 
     const sttEngines = [
-        { value: "nemotron", label: "Nemotron", data: "Transcribes as you speak, so references are picked up almost immediately. Supports around 40 languages." }
-        // other models in the future?
+        { value: "nemotron", label: "Nemotron", data: "Transcribes as you speak, so references are picked up almost immediately. Supports around 40 languages." },
+        { value: "swivuriso", label: "Swivuriso", data: "South African languages (isiZulu, isiXhosa, Sesotho, Setswana, Xitsonga, isiNdebele, Tshivenda). Listens in 5-8 second chunks. One-time setup required." }
     ]
     $: selectedSttEngine = sttOptions.engine || resolveSttEngine()
 
@@ -63,6 +64,8 @@
 
     {#if selectedSttEngine === "nemotron"}
         <NemotronOptions />
+    {:else if selectedSttEngine === "swivuriso"}
+        <SwivurisoOptions />
     {/if}
 {/if}
 
