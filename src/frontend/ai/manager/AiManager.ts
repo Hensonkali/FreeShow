@@ -6,7 +6,7 @@ import { startScripture } from "../../components/actions/apiHelper"
 import { keysToID } from "../../components/helpers/array"
 import { getFirstActiveOutput } from "../../components/helpers/output"
 import { setActiveScripture } from "../../converters/bible"
-import { ai, aiSmartAction, aiSuggestions, drawerTabsData, outputs, scriptures } from "../../stores"
+import { ai, aiSmartAction, aiSuggestions, drawerTabsData, outputs, scriptures, sttTranscript } from "../../stores"
 import { newToast } from "../../utils/common"
 import { Main } from "../../../types/IPC/Main"
 import { requestMain } from "../../IPC/main"
@@ -145,17 +145,22 @@ export class AiManager {
 
     private static lastCommand: { signature: string; at: number } | null = null
     private static async voiceCommandDetection(textChunk: string, isCancelled?: () => boolean): Promise<boolean> {
+        // ALL installed Bibles, offline AND online — switching translation is a display action
         const installed = keysToID(get(scriptures))
-            .filter((a: any) => !a.api && !a.collection)
+            .filter((a: any) => !a.collection)
             .map((a: any) => ({ id: a.id, name: a.name, customName: a.customName })) as InstalledTranslation[]
 
         const command = detectVoiceCommand(textChunk, installed)
         if (!command) return false
 
-        // chunk overlap repeats the last words: run each command once per 30 seconds
+        // dedup: chunk overlap repeats the last words, so the same utterance arrives twice.
+        // Navigation commands key on the transcript length — each NEW "next verse" advances,
+        // while the overlap echo (same chunk, same length) is ignored. Translation switches
+        // also wait out a 30s window so a repeated phrase can't flip Bibles back and forth.
         const now = Date.now()
-        const signature = JSON.stringify(command)
-        if (this.lastCommand && this.lastCommand.signature === signature && now - this.lastCommand.at < 30000) return true
+        const isNavigation = command.command === "next_verse" || command.command === "previous_verse"
+        const signature = isNavigation ? `${command.command}|${(get(sttTranscript).finalized + get(sttTranscript).unprocessed).length}` : JSON.stringify(command)
+        if (this.lastCommand && this.lastCommand.signature === signature && (isNavigation ? now - this.lastCommand.at < 2000 : now - this.lastCommand.at < 30000)) return true
         this.lastCommand = { signature, at: now }
 
         const heard = textChunk
@@ -187,6 +192,13 @@ export class AiManager {
             setActiveScripture(command.translationId)
             newToast(`Switched to ${command.name}`)
             logDecisionDeduped({ heard, ref: command.name, action: "presented", reason: "voice_command_translation" })
+
+            // "show this in Zulu" — re-present the passage on screen in the new translation
+            if (this.liveContent) {
+                this.lastPresented = { content: this.liveContent, at: Date.now() }
+                startScripture({ reference: this.liveContent })
+                this.outputUpdate(this.liveContent)
+            }
             return true
         }
 
@@ -197,6 +209,9 @@ export class AiManager {
     }
 
     private static async embeddingDetection(textChunk: string, isCancelled?: () => boolean) {
+        // paraphrase search needs the embedding model; disable it to save RAM on small machines
+        if (get(ai)?.paraphraseSearch === false) return null
+
         const activeBibleId = get(drawerTabsData)?.scripture?.activeSubTab
         if (!activeBibleId) return null
 

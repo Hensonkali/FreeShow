@@ -6,6 +6,9 @@ export interface AiSettings {
     // shadow mode: detect and log, but never display anything on the output
     shadowMode?: boolean
 
+    // paraphrase search with the local embedding model (disable on very small machines)
+    paraphraseSearch?: boolean
+
     scripture?: AiScriptureSettings
 }
 

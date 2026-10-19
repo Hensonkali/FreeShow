@@ -14,7 +14,8 @@ describe("selectEmbeddingSuggestion", () => {
         expect(match?.content).toBe("John 3:16")
         expect(match?.detector).toBe("embedding")
         expect(match?.confidence).toBe(77)
-        expect(match?.suggestOnly).toBe(true)
+        // 0.774 is above the auto-present line, so it is not suggestion-locked
+        expect(match?.suggestOnly).toBeFalsy()
     })
 
     it("rejects a winner below the score floor", () => {
@@ -43,6 +44,15 @@ describe("selectEmbeddingSuggestion", () => {
 
     it("accepts a lone candidate above the floor", () => {
         expect(selectEmbeddingSuggestion([{ ref: "Genesis 1:1", score: EMBED_MIN_SCORE }], "kjv")?.content).toBe("Genesis 1:1")
+    })
+
+    it("high scores are auto-present eligible, lower scores stay suggestion-only", () => {
+        const high = selectEmbeddingSuggestion([{ ref: "John 3:16", score: 0.875 }, { ref: "John 3:17", score: 0.4 }], "kjv")
+        expect(high?.suggestOnly).toBeFalsy()
+        expect(high?.confidence).toBe(88)
+
+        const medium = selectEmbeddingSuggestion([{ ref: "John 3:16", score: 0.65 }, { ref: "John 3:17", score: 0.2 }], "kjv")
+        expect(medium?.suggestOnly).toBe(true)
     })
 
     it("rejects empty results", () => {

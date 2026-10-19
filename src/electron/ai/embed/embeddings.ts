@@ -94,7 +94,7 @@ class EmbeddingEngine {
             const ort = this.ort
             const tokenizer = JSON.parse(fs.readFileSync(path.join(getEmbedDir(), TOKENIZER_FILE), "utf8"))
             this.vocab = buildVocab(tokenizer.model?.vocab || {})
-            this.session = await ort.InferenceSession.create(getModelPath(), { executionProviders: ["cpu"], logSeverityLevel: 3 })
+            this.session = await ort.InferenceSession.create(getModelPath(), { executionProviders: ["cpu"], logSeverityLevel: 3, intraOpNumThreads: 2, interOpNumThreads: 1 })
             const output = this.session.outputNames[0]
             const metadata = this.session.outputMetadata?.[0]?.[output]
             this.dims = metadata?.dimensions?.[2] || 384

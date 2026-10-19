@@ -61,9 +61,11 @@ function watchNemotronDownload() {
     })
 }
 
-// the embedding model is only needed while Smart listening is enabled
+// the embedding model is only needed while Smart listening is enabled,
+// and only when paraphrase search is on (it can be disabled to save RAM)
 async function ensureEmbeddingModel() {
     if (!get(ai)?.enabled) return
+    if (get(ai)?.paraphraseSearch === false) return
 
     let status = null
     try {

@@ -38,6 +38,11 @@
         <Tip type="info" value="ai.shadow_mode_hint" top={10} />
     {/if}
 
+    <MaterialToggleSwitch label={translateText("ai.paraphrase_search")} checked={$ai.paraphraseSearch !== false} on:change={(e) => updateValue("paraphraseSearch", e.detail)} />
+    {#if $ai.paraphraseSearch !== false}
+        <Tip type="info" value="ai.paraphrase_search_hint" top={10} />
+    {/if}
+
     <MaterialButton variant="outlined" icon="search" style="width: 100%;margin-top: 10px;" on:click={() => activePopup.set("ai_scripture_test")}>
         <T id="ai.test_open" />
     </MaterialButton>

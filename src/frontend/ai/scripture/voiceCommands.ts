@@ -7,6 +7,23 @@ export interface InstalledTranslation {
     customName?: string
 }
 
+// pure Levenshtein similarity (0-1), kept inline so this module stays dependency-free
+function similarity(a: string, b: string): number {
+    if (a === b) return 1
+    const m = a.length
+    const n = b.length
+    if (!m || !n) return 0
+    let previous = new Array(n + 1).fill(0).map((_, i) => i)
+    for (let i = 1; i <= m; i++) {
+        const current = [i]
+        for (let j = 1; j <= n; j++) {
+            current[j] = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+        }
+        previous = current
+    }
+    return 1 - previous[n] / Math.max(m, n)
+}
+
 export type VoiceCommand = { command: "next_verse" } | { command: "previous_verse" } | { command: "translation"; translationId: string; name: string } | { command: "translation_missing"; name: string }
 
 // common English translation names people say, mapped to the short name
@@ -77,7 +94,7 @@ export const KNOWN_TRANSLATION_ALIASES: Record<string, string> = {
 
 const NEXT_VERSE_PATTERN = /\b(?:next|following)\s+(?:verse|one|scripture|passage)\b|\bonward(?:\s+to\s+the\s+next)?\b/i
 const PREVIOUS_VERSE_PATTERN = /\b(?:previous|last)\s+(?:verse|one|scripture|passage)\b|\bgo\s+back\s+(?:a|one)?\s*(?:verse)?\b|\bback\s+(?:up|one)\b/i
-const TRANSLATION_PATTERN = /\b(?:give\s+me|switch\s+to|change\s+to|open(?:\s+up)?|read\s+(?:from|the)|show\s+me|put\s+(?:the\s+)?(?:nlt|esv|niv|kjv|nkjv|nasb|web|asv|bsb|amp|msg|csb|ylt|tlv|isv)?\s*(?:on)?|use)\s+(?:the\s+|new\s+king\s+james\s+)?([a-z0-9'’\-. ]{2,45}?)(?:\s+(?:version|bible|translation))?\s*(?:please|now|instead)?\s*[.?!]*$/i
+const TRANSLATION_PATTERN = /\b(?:give\s+me|switch\s+to|change\s+to|move\s+(?:it\s+)?to|go\s+to|open(?:\s+up)?|read\s+(?:from|the)|show\s+me|show\s+(?:this|it|that|the\s+\w+)?\s*(?:in|on)|have\s+(?:this|that|it)\s+in|put\s+(?:the\s+)?(?:nlt|esv|niv|kjv|nkjv|nasb|web|asv|bsb|amp|msg|csb|ylt|tlv|isv)?\s*(?:on)?|use)\s+(?:the\s+|new\s+king\s+james\s+)?([a-z0-9'’\-. ]{2,45}?)(?:\s+(?:version|bible|translation))?\s*(?:please|now|instead)?\s*[.?!]*$/i
 
 function normalizeName(name: string): string {
     return name
@@ -102,6 +119,10 @@ function matchesInstalled(normalized: string, installed: InstalledTranslation[])
             if (candidate === normalized) return scripture
             // short or full form as whole words inside a longer name ("KJV (King James Version)")
             if (requestedWord.test(candidate)) return scripture
+            // fuzzy: a whole word of the name is close enough ("amplifide" ~ "amplified")
+            for (const token of candidate.split(/\s+/)) {
+                if (token.length >= 4 && similarity(token, normalized) >= 0.75) return scripture
+            }
         }
     }
     return null

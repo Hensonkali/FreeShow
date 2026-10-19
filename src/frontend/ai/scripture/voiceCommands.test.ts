@@ -36,11 +36,30 @@ describe("detectVoiceCommand - translations", () => {
         expect(detectVoiceCommand("give me the bible in basic english", installed)).toEqual({ command: "translation", translationId: "a.bbe", name: "Bible in Basic English" })
     })
 
+    it("understands 'show this in X' phrasing", () => {
+        expect(detectVoiceCommand("show this in Zulu", installed)).toEqual({ command: "translation", translationId: "zulu.1", name: "Zulu Bible" })
+        expect(detectVoiceCommand("show it in the Zulu Bible", installed)).toEqual({ command: "translation", translationId: "zulu.1", name: "Zulu Bible" })
+        expect(detectVoiceCommand("can we have that in Zulu", installed)).toEqual({ command: "translation", translationId: "zulu.1", name: "Zulu Bible" })
+    })
+
+    it("matches a bible by partial name ('move it to Amplified' -> 'Amplified Bible')", () => {
+        const withAmplified: InstalledTranslation[] = [...installed, { id: "a.amp", name: "Amplified Bible" }]
+        expect(detectVoiceCommand("move it to Amplified", withAmplified)).toEqual({ command: "translation", translationId: "a.amp", name: "Amplified Bible" })
+        expect(detectVoiceCommand("switch to Amplified", withAmplified)).toEqual({ command: "translation", translationId: "a.amp", name: "Amplified Bible" })
+        expect(detectVoiceCommand("give me the Amplified", withAmplified)).toEqual({ command: "translation", translationId: "a.amp", name: "Amplified Bible" })
+    })
+
+    it("survives mishearings with fuzzy word matching", () => {
+        const withAmplified: InstalledTranslation[] = [...installed, { id: "a.amp", name: "Amplified Bible" }]
+        expect(detectVoiceCommand("switch to Amplifide", withAmplified)).toEqual({ command: "translation", translationId: "a.amp", name: "Amplified Bible" })
+    })
+
     it("reports a missing known translation instead of showing a wrong verse", () => {
         expect(detectVoiceCommand("give me NLT", installed)).toEqual({ command: "translation_missing", name: "NLT" })
         expect(detectVoiceCommand("can you give me the ESV please", installed)).toEqual({ command: "translation_missing", name: "ESV" })
         expect(detectVoiceCommand("switch to the New International Version", installed)).toEqual({ command: "translation_missing", name: "NIV" })
         expect(detectVoiceCommand("put the NLT on screen", installed)).toEqual({ command: "translation_missing", name: "NLT" })
+        expect(detectVoiceCommand("show this in NIV", installed)).toEqual({ command: "translation_missing", name: "NIV" })
     })
 
     it("returns null for unknown requested names", () => {
