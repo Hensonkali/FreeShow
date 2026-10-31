@@ -115,10 +115,10 @@
     <span style="width: var(--navigation-width);justify-content: flex-end;">
         {#if $ai.enabled}
             <Button id="ai_listen_button" title={translateText($sttTempDisabled ? "ai.resume_listening" : "ai.pause_listening")} on:click={() => SpeechToText.setPaused(!$sttTempDisabled)} red={$sttTempDisabled}>
-                <Icon id="microphone" size={1.6} white />
+                <Icon id="microphone" size={1.4} white />
             </Button>
             <Button id="ai_lock_button" title={translateText($aiOutputLocked ? "ai.unlock_output" : "ai.lock_output")} on:click={() => aiOutputLocked.update((a) => !a)} red={$aiOutputLocked}>
-                <Icon id="lock" size={1.6} white />
+                <Icon id="lock" size={1.4} white />
             </Button>
         {/if}
         <TopButton id="draw" red={$drawTool === "fill" || ($drawTool === "zoom" && $drawSettings.zoom?.size !== 100) || !!($drawTool === "paint" && $paintCache?.length)} hideLabel />

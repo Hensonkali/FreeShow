@@ -25,23 +25,6 @@
 
     let newPassage = ""
 
-    $: noiseGateValue = $ai.stt?.engineOptions?.nemotron?.noiseGateThreshold ?? 0.05
-
-    function setNoiseGate(val: number) {
-        ai.update((a) => {
-            if (!a.stt) a.stt = {}
-            if (!a.stt.engineOptions) a.stt.engineOptions = {}
-            if (!a.stt.engineOptions.nemotron) a.stt.engineOptions.nemotron = {}
-            a.stt.engineOptions.nemotron.noiseGateThreshold = val
-            return a
-        })
-    }
-
-    function setNoiseGateInput(e: Event) {
-        const target = e.target as HTMLInputElement
-        setNoiseGate(parseFloat(target.value) / 100)
-    }
-
     function addPassage() {
         const p = newPassage.trim()
         if (!p) return
@@ -60,44 +43,29 @@
         })
     }
 
-    let newWhitelist = ""
-
-    function addWhitelist() {
-        const p = newWhitelist.trim()
-        if (!p) return
+    function toggleFeature(key: string) {
         ai.update((a) => {
-            if (!a.whitelist) a.whitelist = []
-            if (!a.whitelist.includes(p)) a.whitelist.push(p)
-            return a
-        })
-        newWhitelist = ""
-    }
-
-    function removeWhitelist(index: number) {
-        ai.update((a) => {
-            if (a.whitelist) a.whitelist.splice(index, 1)
+            if (!a.features) a.features = {}
+            a.features[key] = !a.features[key]
             return a
         })
     }
 
-    let newBlacklist = ""
+    $: noiseGateValue = $ai.stt?.engineOptions?.nemotron?.noiseGateThreshold ?? 0.05
 
-    function addBlacklist() {
-        const p = newBlacklist.trim()
-        if (!p) return
+    function setNoiseGate(val: number) {
         ai.update((a) => {
-            if (!a.blacklist) a.blacklist = []
-            if (!a.blacklist.includes(p)) a.blacklist.push(p)
+            if (!a.stt) a.stt = {}
+            if (!a.stt.engineOptions) a.stt.engineOptions = {}
+            if (!a.stt.engineOptions.nemotron) a.stt.engineOptions.nemotron = {}
+            a.stt.engineOptions.nemotron.noiseGateThreshold = val
             return a
         })
-        newBlacklist = ""
     }
 
-    function removeBlacklist(index: number) {
-        ai.update((a) => {
-            if (a.blacklist) a.blacklist.splice(index, 1)
-            return a
-        })
+    function setNoiseGateInput(e: Event) {
+        const target = e.target as HTMLInputElement
+        setNoiseGate(parseFloat(target.value) / 100)
     }
 </script>
 
@@ -120,94 +88,23 @@
         <Tip type="warning" value="ai.lock_output_hint" top={10} />
     {/if}
 
-    <MaterialToggleSwitch label={translateText("ai.paraphrase_search")} checked={$ai.paraphraseSearch !== false} on:change={(e) => updateValue("paraphraseSearch", e.detail)} />
-    {#if $ai.paraphraseSearch !== false}
-        <Tip type="info" value="ai.paraphrase_search_hint" top={10} />
-    {/if}
-
-    <div class="feature-switches">
-        <MaterialToggleSwitch label={translateText("ai.feature_reference")} checked={$ai.features?.reference !== false} on:change={(e) => updateValue("features.reference", e.detail)} />
-        <MaterialToggleSwitch label={translateText("ai.feature_content")} checked={$ai.features?.content !== false} on:change={(e) => updateValue("features.content", e.detail)} />
-        <MaterialToggleSwitch label={translateText("ai.feature_embedding")} checked={$ai.features?.embedding !== false} on:change={(e) => updateValue("features.embedding", e.detail)} />
-        <MaterialToggleSwitch label={translateText("ai.feature_voice")} checked={$ai.features?.voice !== false} on:change={(e) => updateValue("features.voice", e.detail)} />
+    <div class="ai-feature-group">
+        <MaterialToggleSwitch label={translateText("ai.feature_voice")} checked={$ai.features?.voice !== false} on:change={() => toggleFeature("voice")} />
+        <MaterialToggleSwitch label={translateText("ai.feature_reference")} checked={$ai.features?.reference !== false} on:change={() => toggleFeature("reference")} />
+        <MaterialToggleSwitch label={translateText("ai.feature_content")} checked={$ai.features?.content !== false} on:change={() => toggleFeature("content")} />
+        <MaterialToggleSwitch label={translateText("ai.feature_embedding")} checked={$ai.features?.embedding !== false} on:change={() => toggleFeature("embedding")} />
     </div>
 
-    <div class="service-passages">
+    <div class="passage-section">
         <div class="section-title">{translateText("ai.service_passages")}</div>
-        <div class="passage-input">
-            <input
-                type="text"
-                placeholder="{translateText('ai.service_passage_placeholder')}"
-                bind:value={newPassage}
-                on:keydown={(e) => {
-                    if (e.key === "Enter") addPassage()
-                }}
-            />
-            <MaterialButton variant="outlined" icon="add" on:click={addPassage}>
-                <T id="ai.add" />
-            </MaterialButton>
+        <div class="passage-row">
+            <input type="text" placeholder="{translateText('ai.service_passage_placeholder')}" bind:value={newPassage} on:keydown={(e) => { if (e.key === "Enter") addPassage() }} />
+            <MaterialButton variant="outlined" icon="add" on:click={addPassage} />
         </div>
         {#if $ai.servicePassages?.length}
             <div class="passage-list">
                 {#each $ai.servicePassages as passage, i}
-                    <div class="passage-item">
-                        <span>{passage}</span>
-                        <MaterialButton variant="outlined" icon="remove" on:click={() => removePassage(i)} />
-                    </div>
-                {/each}
-            </div>
-        {/if}
-    </div>
-
-    <div class="whitelist-blacklist">
-        <div class="section-title">{translateText("ai.whitelist_title")}</div>
-        <div class="passage-input">
-            <input
-                type="text"
-                placeholder="{translateText('ai.whitelist_placeholder')}"
-                bind:value={newWhitelist}
-                on:keydown={(e) => {
-                    if (e.key === "Enter") addWhitelist()
-                }}
-            />
-            <MaterialButton variant="outlined" icon="add" on:click={addWhitelist}>
-                <T id="ai.add" />
-            </MaterialButton>
-        </div>
-        {#if $ai.whitelist?.length}
-            <div class="passage-list">
-                {#each $ai.whitelist as passage, i}
-                    <div class="passage-item">
-                        <span>{passage}</span>
-                        <MaterialButton variant="outlined" icon="remove" on:click={() => removeWhitelist(i)} />
-                    </div>
-                {/each}
-            </div>
-        {/if}
-    </div>
-
-    <div class="whitelist-blacklist">
-        <div class="section-title">{translateText("ai.blacklist_title")}</div>
-        <div class="passage-input">
-            <input
-                type="text"
-                placeholder="{translateText('ai.blacklist_placeholder')}"
-                bind:value={newBlacklist}
-                on:keydown={(e) => {
-                    if (e.key === "Enter") addBlacklist()
-                }}
-            />
-            <MaterialButton variant="outlined" icon="add" on:click={addBlacklist}>
-                <T id="ai.add" />
-            </MaterialButton>
-        </div>
-        {#if $ai.blacklist?.length}
-            <div class="passage-list">
-                {#each $ai.blacklist as passage, i}
-                    <div class="passage-item">
-                        <span>{passage}</span>
-                        <MaterialButton variant="outlined" icon="remove" on:click={() => removeBlacklist(i)} />
-                    </div>
+                    <div class="passage-item"><span>{passage}</span><MaterialButton variant="outlined" icon="remove" size="small" on:click={() => removePassage(i)} /></div>
                 {/each}
             </div>
         {/if}
@@ -216,16 +113,9 @@
     <div class="noise-gate">
         <div class="noise-gate-row">
             <label style="flex: 1;">{translateText("ai.noise_gate")}</label>
-            <span>{Math.round(($ai.stt?.engineOptions?.nemotron?.noiseGateThreshold ?? 0.05) * 100)}%</span>
+            <span>{Math.round(noiseGateValue * 100)}%</span>
         </div>
-        <input
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value={noiseGateValue}
-            on:input={(e) => setNoiseGateInput(e)}
-        />
+        <input type="range" min="0" max="100" step="5" value={noiseGateValue} on:input={setNoiseGateInput} />
     </div>
     <Tip type="info" value="ai.noise_gate_hint" top={10} />
 
@@ -247,29 +137,18 @@
         margin-bottom: 20px;
     }
 
-    .feature-switches {
+    .ai-feature-group {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 4px;
+        margin: 12px 0;
+    }
+
+    .passage-section {
         margin: 16px 0;
     }
 
-    .noise-gate {
-        margin: 16px 0;
-    }
-
-    .noise-gate-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        font-size: 0.9em;
-    }
-
-    .noise-gate input[type="range"] {
-        width: 100%;
-    }
-
-    .service-passages {
+    .whitelist-blacklist {
         margin: 16px 0;
     }
 
@@ -280,13 +159,13 @@
         opacity: 0.9;
     }
 
-    .passage-input {
+    .passage-row {
         display: flex;
         gap: 8px;
         margin-bottom: 12px;
     }
 
-    .passage-input input {
+    .passage-row input {
         flex: 1;
     }
 
@@ -305,7 +184,18 @@
         border-radius: 4px;
     }
 
-    .whitelist-blacklist {
+    .noise-gate {
         margin: 16px 0;
+    }
+
+    .noise-gate-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.9em;
+    }
+
+    .noise-gate input[type="range"] {
+        width: 100%;
     }
 </style>
