@@ -10,6 +10,26 @@
 
     $: isEnabled = $ai.enabled
 
+    let newLLMModel = ""
+
+    function addLLMModel() {
+        const p = newLLMModel.trim()
+        if (!p) return
+        ai.update((a) => {
+            if (!a.llm) a.llm = {}
+            a.llm.model = p
+            return a
+        })
+        newLLMModel = ""
+    }
+
+    function removeLLMModel() {
+        ai.update((a) => {
+            if (a.llm) a.llm.model = ""
+            return a
+        })
+    }
+
     function updateValue(key: string, value: any) {
         ai.update((a) => {
             a[key] = value
@@ -53,6 +73,9 @@
 
     $: noiseGateValue = $ai.stt?.engineOptions?.nemotron?.noiseGateThreshold ?? 0.05
 
+    $: llmProvider = $ai.llm?.provider || "ollama"
+    $: llmModel = $ai.llm?.model || "qwen2.5:1.5b"
+
     function setNoiseGate(val: number) {
         ai.update((a) => {
             if (!a.stt) a.stt = {}
@@ -66,6 +89,15 @@
     function setNoiseGateInput(e: Event) {
         const target = e.target as HTMLInputElement
         setNoiseGate(parseFloat(target.value) / 100)
+    }
+
+    function setLLMProvider(e: Event) {
+        const val = (e.target as HTMLSelectElement).value
+        ai.update((a) => {
+            if (!a.llm) a.llm = {}
+            a.llm.provider = val
+            return a
+        })
     }
 </script>
 
@@ -93,6 +125,7 @@
         <MaterialToggleSwitch label={translateText("ai.feature_reference")} checked={$ai.features?.reference !== false} on:change={() => toggleFeature("reference")} />
         <MaterialToggleSwitch label={translateText("ai.feature_content")} checked={$ai.features?.content !== false} on:change={() => toggleFeature("content")} />
         <MaterialToggleSwitch label={translateText("ai.feature_embedding")} checked={$ai.features?.embedding !== false} on:change={() => toggleFeature("embedding")} />
+        <MaterialToggleSwitch label={translateText("ai.feature_llm")} checked={$ai.features?.llm !== false} on:change={() => toggleFeature("llm")} />
     </div>
 
     <div class="passage-section">
@@ -122,6 +155,27 @@
     <MaterialButton variant="outlined" icon="search" style="width: 100%;margin-top: 10px;" on:click={() => activePopup.set("ai_scripture_test")}>
         <T id="ai.test_open" />
     </MaterialButton>
+
+    <div class="llm-section">
+        <div class="section-title">{translateText("ai.llm_settings")}</div>
+        <div class="passage-row">
+            <label style="flex: 1;">{translateText("ai.llm_provider")}</label>
+            <select bind:value={llmProvider} on:change={setLLMProvider}>
+                <option value="ollama">Ollama (local)</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="google">Google</option>
+            </select>
+        </div>
+        <div class="passage-row">
+            <label style="flex: 1;">{translateText("ai.llm_model")}</label>
+            <input type="text" placeholder="qwen2.5:1.5b" bind:value={newLLMModel} on:keydown={(e) => { if (e.key === "Enter") addLLMModel() }} />
+            <MaterialButton variant="outlined" icon="add" on:click={addLLMModel} />
+            <span style="font-size: 0.8em; opacity: 0.7;">Current: {$ai.llm?.model || "qwen2.5:1.5b"}</span>
+            <MaterialButton variant="outlined" icon="remove" size="small" on:click={removeLLMModel} />
+        </div>
+        <Tip type="info" value="ai.llm_hint" top={10} />
+    </div>
 
     <!-- TODO: auto lyrics & more -->
 {:else}

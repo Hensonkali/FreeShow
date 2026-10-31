@@ -88,16 +88,91 @@ export class AiManager {
         if (this.lastMatch && Date.now() - this.lastMatch < this.MAX_LLM_REQUEST_AFTER_MATCH) return
 
         if (llmEnabled) {
-            const llmManager = getLLMManager()
-            if (!llmManager) return
-
-            // only report to LLM if nothing is auto detected
-            const llmMatch = await llmManager.detectMatch(chunk)
-            if (llmMatch) {
-                this.newMatch(llmMatch, chunk.chunkWithOverlap)
+            // LLM second-opinion: ask Ollama to verify/identify the verse
+            // Only runs when rule-based detectors (reference, content, embedding) all return no match
+            const llmVerify = await this.ollamaVerifyMatch(chunk.chunkWithOverlap, isCancelled)
+            if (isCancelled()) return
+            if (llmVerify) {
+                this.newMatch(llmVerify, chunk.chunkWithOverlap)
                 this.lastMatch = Date.now()
-                this.cacheDetection(chunkText, llmMatch)
+                this.cacheDetection(chunkText, llmVerify)
+                return
             }
+        }
+    }
+
+    // Ollama second-opinion: ask the local LLM to identify the verse from heard text
+    // and candidate verses. Runs only when rule-based detectors are unsure.
+    private static async ollamaVerifyMatch(textChunk: string, isCancelled?: () => boolean): Promise<MatchResult | null> {
+        const activeBibleId = get(drawerTabsData)?.scripture?.activeSubTab
+        if (!activeBibleId) return null
+
+        const scriptureData = get(scriptures)[activeBibleId]
+        if (!scriptureData || scriptureData?.api) return null
+
+        // Get candidate verses from rule-based detectors (lower confidence matches)
+        const candidateVerses: string[] = []
+        if (this.liveContent) candidateVerses.push(this.liveContent)
+
+        // Get top candidates from embedding detector if available
+        try {
+            const embedResult = await requestMain(Main.AI_EMBED_QUERY, { text: textChunk, bibleId: activeBibleId, name: scriptureData.name, topK: 5 })
+            if (embedResult?.results) {
+                for (const r of embedResult.results) {
+                    if (!candidateVerses.includes(r.ref)) candidateVerses.push(r.ref)
+                }
+            }
+        } catch {}
+
+        const prompt = `You are a Bible verse detection assistant. The user said: "${textChunk}"
+
+Candidate Bible verses: ${candidateVerses.length > 0 ? candidateVerses.join(', ') : 'none'}
+
+Task: Determine if the heard text matches any of the candidate verses, or if it refers to a different verse entirely.
+- If the heard text clearly matches one of the candidates, return that verse reference.
+- If the heard text refers to a different Bible verse, return that verse reference.
+- If you cannot confidently identify a verse, return null.
+
+Respond with ONLY a JSON object: {"verse": "John 3:16", "confidence": 0.85} or {"verse": null, "confidence": 0}
+Do not include any other text.`
+
+        try {
+            const result = await requestMain(Main.AI_LLM_COMPLETE, {
+                providerId: get(ai)?.llm?.provider || 'ollama',
+                model: get(ai)?.llm?.model || 'qwen2.5:1.5b',
+                options: {
+                    systemPrompt: 'You are a Bible verse detection assistant. Respond only with valid JSON.',
+                    prompt,
+                    jsonSchema: {
+                        type: 'object',
+                        properties: {
+                            verse: { type: ['string', 'null'] },
+                            confidence: { type: 'number', minimum: 0, maximum: 1 }
+                        },
+                        required: ['verse', 'confidence']
+                    },
+                    temperature: 0.1,
+                    maxTokens: 50
+                }
+            }, undefined, 15000)
+
+            if (isCancelled?.()) return null
+            if (!result?.text) return null
+
+            const parsed = JSON.parse(result.text.trim())
+            if (!parsed.verse) return null
+
+            return {
+                type: 'scripture',
+                content: parsed.verse,
+                confidence: Math.round((parsed.confidence ?? 0.7) * 100),
+                detector: 'llm',
+                scriptureMatchType: 'content',
+                scriptureTranslation: activeBibleId,
+                suggestOnly: (parsed.confidence ?? 0.7) < 0.75
+            }
+        } catch {
+            return null
         }
     }
 

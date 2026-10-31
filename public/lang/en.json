@@ -1891,6 +1891,7 @@
         "feature_content": "Content matching",
         "feature_embedding": "Paraphrase (embedding)",
         "feature_voice": "Voice commands",
+        "feature_llm": "LLM verification (Ollama)",
         "noise_gate": "Noise gate",
         "noise_gate_hint": "Audio below this level is not sent for transcription. Helps on noisy rooms."
         "paraphrase_search": "Paraphrase search",
@@ -1907,6 +1908,12 @@
         "whitelist_title": "Always auto-display (whitelist)",
         "whitelist_placeholder": "e.g. Psalm 23:1",
         "blacklist_title": "Never auto-display (blacklist)",
-        "blacklist_placeholder": "e.g. John 3:16"
+        "blacklist_placeholder": "e.g. John 3:16",
+        "llm_settings": "LLM Settings",
+        "llm_provider": "Provider",
+        "llm_model": "Model",
+        "llm_hint": "Ollama runs locally on your CPU. Use qwen2.5:1.5b for best speed/accuracy on 8 GB RAM.",
+        "verify_with_llm": "Verify with LLM",
+        "verify_with_llm_hint": "When rule-based detectors are unsure, ask the local LLM to confirm the verse. Uses Qwen 2.5 1.5B via Ollama."
     }
 }
