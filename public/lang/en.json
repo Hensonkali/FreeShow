@@ -1900,6 +1900,9 @@
         "verse": "Detected verse",
         "present": "Present",
         "skip": "Skip",
-        "overlay_hint": "Approve to show on screen, or skip to dismiss. Auto-dismisses in 10 seconds."
+        "overlay_hint": "Approve to show on screen, or skip to dismiss. Auto-dismisses in 10 seconds.",
+        "service_passages": "Service passages",
+        "service_passage_placeholder": "e.g. John 3:16",
+        "add": "Add"
     }
 }

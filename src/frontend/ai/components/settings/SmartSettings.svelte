@@ -22,6 +22,26 @@
             activePopup.set("ai_model_manager")
         }
     }
+
+    let newPassage = ""
+
+    function addPassage() {
+        const p = newPassage.trim()
+        if (!p) return
+        ai.update((a) => {
+            if (!a.servicePassages) a.servicePassages = []
+            if (!a.servicePassages.includes(p)) a.servicePassages.push(p)
+            return a
+        })
+        newPassage = ""
+    }
+
+    function removePassage(index: number) {
+        ai.update((a) => {
+            if (a.servicePassages) a.servicePassages.splice(index, 1)
+            return a
+        })
+    }
 </script>
 
 <div class="experimental">EXPERIMENTAL!</div>
@@ -53,6 +73,33 @@
         <MaterialToggleSwitch label={translateText("ai.feature_content")} checked={$ai.features?.content !== false} on:change={(e) => updateValue("features.content", e.detail)} />
         <MaterialToggleSwitch label={translateText("ai.feature_embedding")} checked={$ai.features?.embedding !== false} on:change={(e) => updateValue("features.embedding", e.detail)} />
         <MaterialToggleSwitch label={translateText("ai.feature_voice")} checked={$ai.features?.voice !== false} on:change={(e) => updateValue("features.voice", e.detail)} />
+    </div>
+
+    <div class="service-passages">
+        <div class="section-title">{translateText("ai.service_passages")}</div>
+        <div class="passage-input">
+            <input
+                type="text"
+                placeholder="{translateText('ai.service_passage_placeholder')}"
+                bind:value={newPassage}
+                on:keydown={(e) => {
+                    if (e.key === "Enter") addPassage()
+                }}
+            />
+            <MaterialButton variant="outlined" icon="add" on:click={addPassage}>
+                <T id="ai.add" />
+            </MaterialButton>
+        </div>
+        {#if $ai.servicePassages?.length}
+            <div class="passage-list">
+                {#each $ai.servicePassages as passage, i}
+                    <div class="passage-item">
+                        <span>{passage}</span>
+                        <MaterialButton variant="outlined" icon="remove" on:click={() => removePassage(i)} />
+                    </div>
+                {/each}
+            </div>
+        {/if}
     </div>
 
     <div class="noise-gate">
@@ -118,5 +165,41 @@
 
     .noise-gate input[type="range"] {
         width: 100%;
+    }
+
+    .service-passages {
+        margin: 16px 0;
+    }
+
+    .section-title {
+        font-weight: bold;
+        margin-bottom: 8px;
+        font-size: 0.9em;
+        opacity: 0.9;
+    }
+
+    .passage-input {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .passage-input input {
+        flex: 1;
+    }
+
+    .passage-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .passage-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
     }
 </style>

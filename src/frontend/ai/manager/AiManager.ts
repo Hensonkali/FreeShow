@@ -296,7 +296,14 @@ export class AiManager {
         if (match.type === "empty" || !match.content) return
         if (match.type !== "scripture" && match.type !== "scripture_version") return // WIP only scripture is implemented
 
-        const base = { heard, detector: match.detector, ref: match.content, confidence: match.confidence, translation: match.scriptureTranslation }
+        // boost confidence for service passages
+        const servicePassages = get(ai)?.servicePassages || []
+        let boostedConfidence = match.confidence
+        if (servicePassages.includes(match.content)) {
+            boostedConfidence = Math.min(100, match.confidence + 15)
+        }
+
+        const base = { heard, detector: match.detector, ref: match.content, confidence: boostedConfidence, translation: match.scriptureTranslation }
 
         if (match.type === "scripture" && AiManager.liveContent === match.content) {
             logDecisionDeduped({ ...base, action: "suppressed", reason: "already_live" })

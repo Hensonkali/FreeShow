@@ -21,6 +21,9 @@ export interface AiSettings {
         voice?: boolean       // voice command processing
     }
 
+    // pre-loaded service passages - AI prioritizes matches from these
+    servicePassages?: string[]
+
     scripture?: AiScriptureSettings
 }
 
