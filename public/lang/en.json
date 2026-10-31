@@ -1884,6 +1884,9 @@
         "swivuriso_download_raw": "Download raw model (3.24 GB, resumable)",
         "shadow_mode": "Shadow mode",
         "shadow_mode_hint": "Detection still runs and every decision is logged, but nothing is displayed on the output. Test it on recorded sermons.",
+        "lock_output": "Lock output",
+        "lock_output_hint": "AI detects and logs, but never auto-displays or lets voice commands change the screen.",
+        "unlock_output": "Unlock output",
         "paraphrase_search": "Paraphrase search",
         "paraphrase_search_hint": "Catches reworded verses with a small local AI model. Turn it off on machines with 4 GB RAM or less."
     }

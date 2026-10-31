@@ -224,6 +224,8 @@ export const aiSuggestions: Writable<AiSuggestion[]> = writable([])
 export const aiSmartAction: Writable<AiSuggestion | null> = writable(null)
 export const sttTranscript: Writable<{ finalized: string; unprocessed: string }> = writable({ finalized: "", unprocessed: "" })
 export const sttTempDisabled: Writable<boolean> = writable(false)
+// lock output: AI detects and logs, but never auto-presents or lets voice commands change output
+export const aiOutputLocked: Writable<boolean> = writable(false)
 
 // ----- SAVED VARIABLES -----
 

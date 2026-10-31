@@ -1,6 +1,6 @@
 <script lang="ts">
     import { slide } from "svelte/transition"
-    import { activeEdit, activePage, activeProfile, activeProject, activeShow, ai, cloudUsers, dictionary, drawSettings, drawTool, os, outputDisplay, outputs, paintCache, profiles, saved, settingsTab, shows, sttTempDisabled } from "../../stores"
+    import { activeEdit, activePage, activeProfile, activeProject, activeShow, ai, aiOutputLocked, cloudUsers, dictionary, drawSettings, drawTool, os, outputDisplay, outputs, paintCache, profiles, saved, settingsTab, shows, sttTempDisabled } from "../../stores"
     import { getCloudUsers } from "../../utils/cloudSync"
     import { translateText } from "../../utils/language"
     import { SpeechToText } from "../../ai/stt/stt"
@@ -116,6 +116,9 @@
         {#if $ai.enabled}
             <Button id="ai_listen_button" title={translateText($sttTempDisabled ? "ai.resume_listening" : "ai.pause_listening")} on:click={() => SpeechToText.setPaused(!$sttTempDisabled)} red={$sttTempDisabled}>
                 <Icon id="microphone" size={1.6} white />
+            </Button>
+            <Button id="ai_lock_button" title={translateText($aiOutputLocked ? "ai.unlock_output" : "ai.lock_output")} on:click={() => aiOutputLocked.update((a) => !a)} red={$aiOutputLocked}>
+                <Icon id="lock" size={1.6} white />
             </Button>
         {/if}
         <TopButton id="draw" red={$drawTool === "fill" || ($drawTool === "zoom" && $drawSettings.zoom?.size !== 100) || !!($drawTool === "paint" && $paintCache?.length)} hideLabel />

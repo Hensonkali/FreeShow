@@ -6,7 +6,7 @@ import { startScripture } from "../../components/actions/apiHelper"
 import { keysToID } from "../../components/helpers/array"
 import { getFirstActiveOutput } from "../../components/helpers/output"
 import { setActiveScripture } from "../../converters/bible"
-import { ai, aiSmartAction, aiSuggestions, drawerTabsData, outputs, scriptures, sttTranscript } from "../../stores"
+import { ai, aiOutputLocked, aiSmartAction, aiSuggestions, drawerTabsData, outputs, scriptures, sttTranscript } from "../../stores"
 import { newToast } from "../../utils/common"
 import { Main } from "../../../types/IPC/Main"
 import { requestMain } from "../../IPC/main"
@@ -145,6 +145,14 @@ export class AiManager {
 
     private static lastCommand: { signature: string; at: number } | null = null
     private static async voiceCommandDetection(textChunk: string, isCancelled?: () => boolean): Promise<boolean> {
+        // output lock: detect and log, but never let voice commands change output
+        if (get(aiOutputLocked)) {
+            // still log the attempt as suppressed
+            const heard = textChunk
+            logDecisionDeduped({ heard, action: "suppressed", reason: "output_locked" })
+            return true
+        }
+
         // ALL installed Bibles, offline AND online — switching translation is a display action
         const installed = keysToID(get(scriptures))
             .filter((a: any) => !a.collection)
@@ -297,6 +305,9 @@ export class AiManager {
     private static autoPlayDecision(match: MatchResult): { play: boolean; reason: string } {
         // shadow mode: detect and log, never display (rehearse on recorded sermons)
         if (get(ai)?.shadowMode) return { play: false, reason: "shadow_mode" }
+
+        // output lock: detect and log, but never auto-present or change output
+        if (get(aiOutputLocked)) return { play: false, reason: "output_locked" }
 
         // embedding paraphrase matches are suggestions only, never auto-displayed
         if (match.suggestOnly) return { play: false, reason: "suggest_only" }

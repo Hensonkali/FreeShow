@@ -38,6 +38,11 @@
         <Tip type="info" value="ai.shadow_mode_hint" top={10} />
     {/if}
 
+    <MaterialToggleSwitch label={translateText("ai.lock_output")} checked={$ai.lockOutput} on:change={(e) => updateValue("lockOutput", e.detail)} />
+    {#if $ai.lockOutput}
+        <Tip type="warning" value="ai.lock_output_hint" top={10} />
+    {/if}
+
     <MaterialToggleSwitch label={translateText("ai.paraphrase_search")} checked={$ai.paraphraseSearch !== false} on:change={(e) => updateValue("paraphraseSearch", e.detail)} />
     {#if $ai.paraphraseSearch !== false}
         <Tip type="info" value="ai.paraphrase_search_hint" top={10} />
