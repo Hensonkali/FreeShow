@@ -301,6 +301,7 @@ export class AiManager {
     // the same verse is not auto-shown twice within the cooldown (suggestions still appear)
     private static REPEAT_COOLDOWN_MS = 5 * 60 * 1000
     private static lastPresented: { content: string; at: number } | null = null
+    private static previousLiveContent: string | null = null
 
     private static autoPlayDecision(match: MatchResult): { play: boolean; reason: string } {
         // shadow mode: detect and log, never display (rehearse on recorded sermons)
@@ -356,12 +357,35 @@ export class AiManager {
     }
 
     private static outputUpdate(content: string) {
+        // save previous content for undo before AI overwrites it
+        if (this.liveContent && this.liveContent !== content) {
+            this.previousLiveContent = this.liveContent
+        }
         this.liveContent = content
 
         setTimeout(() => {
             // reset output updates when not "manually" played
             this.lastOutputUpdate = 0
         }, 500)
+    }
+
+    // Undo the last AI action: restore the previous slide/content
+    static canUndo(): boolean {
+        return !!this.previousLiveContent
+    }
+
+    static undoLastAI(): boolean {
+        if (!this.previousLiveContent) return false
+
+        const prev = this.previousLiveContent
+        this.previousLiveContent = null
+
+        startScripture({ reference: prev })
+        this.outputUpdate(prev)
+        this.lastPresented = { content: prev, at: Date.now() }
+
+        logDecisionDeduped({ heard: "", ref: prev, action: "override_presented", reason: "undo_ai" })
+        return true
     }
 
     /////

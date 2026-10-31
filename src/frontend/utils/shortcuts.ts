@@ -26,6 +26,7 @@ import { audioExtensions, imageExtensions, videoExtensions } from "../values/ext
 import { drawerTabs } from "../values/tabs"
 import { activeShow } from "./../stores"
 import { logDecisionDeduped } from "../ai/logging/decisionLog"
+import { AiManager } from "../ai/manager/AiManager"
 import { hideDisplay, isOutputWindow, togglePanels, triggerFunction } from "./common"
 import { getAccess } from "./profile"
 import { triggerPopupSubmit } from "./popup"
@@ -86,7 +87,8 @@ const shiftCtrlKeys = {
     f: () => menuClick("focus_mode"),
     n: () => activePopup.set("show"),
     v: () => changeSlidesView(),
-    z: () => redo()
+    z: () => redo(),
+    u: () => AiManager.undoLastAI()
 }
 
 const altKeys = {

@@ -4,7 +4,8 @@
     import T from "../../../components/helpers/T.svelte"
     import MaterialButton from "../../../components/inputs/MaterialButton.svelte"
     import Center from "../../../components/system/Center.svelte"
-    import { aiSmartAction, aiSttStatus, aiSuggestions, outLocked, scriptures, sttTranscript } from "../../../stores"
+    import { AiManager } from "../../manager/AiManager"
+    import { aiOutputLocked, aiSmartAction, aiSuggestions, outLocked, scriptures, sttTranscript } from "../../../stores"
     import { translateText } from "../../../utils/language"
     import { logDecisionDeduped } from "../../logging/decisionLog"
     import { Transcript } from "../../stt/transcript"
@@ -40,6 +41,11 @@
     // confident suggestions surface here so the operator can present them with one click
 
     $: suggestions = $aiSuggestions
+    $: canUndo = AiManager.canUndo()
+
+    function undoLastAI() {
+        AiManager.undoLastAI()
+    }
 
     function removeSuggestion(id: string) {
         const removed = $aiSuggestions.find((item) => item.id === id)
@@ -129,6 +135,14 @@
         {/each}
     </div>
 {/if}
+
+    {#if canUndo}
+        <div class="undo-ai">
+            <MaterialButton icon="undo" title={translateText("ai.undo_last")} style="flex: 1;" on:click={undoLastAI}>
+                <T id="ai.undo_last" />
+            </MaterialButton>
+        </div>
+    {/if}
 
 <style>
     .card-body {
@@ -223,6 +237,14 @@
     .suggestionHeader .reference {
         font-weight: 600;
         white-space: nowrap;
+    }
+
+    .undo-ai {
+        margin-top: 8px;
+        padding: 8px;
+        background-color: rgba(255, 0, 0, 0.1);
+        border: 1px solid rgba(255, 0, 0, 0.3);
+        border-radius: 4px;
     }
 
     /* Animations */
