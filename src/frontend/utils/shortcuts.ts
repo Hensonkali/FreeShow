@@ -16,12 +16,13 @@ import { getFirstActiveOutput, refreshOut, setOutput, startFolderTimer, toggleOu
 import { OutputHelper } from "../components/helpers/OutputHelper"
 import { VideoPlayer } from "../components/media/video/videoPlayer"
 import { clearAll, clearBackground, clearSlide } from "../components/output/clear"
+import { SpeechToText } from "../ai/stt/stt"
 import { getRecentlyUsedProjects, openProject } from "../components/show/project"
 import { importFromClipboard } from "../converters/importHelpers"
 import { addSection } from "../converters/project"
 import { requestMain, sendMain } from "../IPC/main"
 import { changeSlidesView } from "../show/slides"
-import { activeDrawerTab, activeEdit, activeFocus, activePage, activePopup, activeProject, activeStage, aiSmartAction, aiSuggestions, alertMessage, audioChannelsData, contextActive, drawer, editMode, focusedArea, focusMode, guideActive, media, os, outLocked, outputs, playingVideoState, projects, quickSearchActive, refreshEditSlide, selected, showRecentlyUsedProjects, special, spellcheck, styles, timelineRecordingAction, topContextActive } from "../stores"
+import { activeDrawerTab, activeEdit, activeFocus, activePage, activePopup, activeProject, activeStage, aiOutputLocked, aiSmartAction, aiSuggestions, alertMessage, audioChannelsData, contextActive, drawer, editMode, focusedArea, focusMode, guideActive, media, os, outLocked, outputs, playingVideoState, projects, quickSearchActive, refreshEditSlide, selected, showRecentlyUsedProjects, special, spellcheck, styles, timelineRecordingAction, topContextActive } from "../stores"
 import { audioExtensions, imageExtensions, videoExtensions } from "../values/extensions"
 import { drawerTabs } from "../values/tabs"
 import { activeShow } from "./../stores"
@@ -55,6 +56,11 @@ const ctrlKeys = {
             return a
         }),
     o: () => toggleOutputs(),
+    p: () => {
+        // toggle AI listening pause
+        const stt = SpeechToText
+        if (stt) stt.setPaused(!get(sttTempDisabled))
+    },
     s: () => save(),
     t: () => togglePanels(),
     y: () => redo(),
@@ -88,7 +94,8 @@ const shiftCtrlKeys = {
     n: () => activePopup.set("show"),
     v: () => changeSlidesView(),
     z: () => redo(),
-    u: () => AiManager.undoLastAI()
+    u: () => AiManager.undoLastAI(),
+    l: () => aiOutputLocked.update((a) => !a)
 }
 
 const altKeys = {

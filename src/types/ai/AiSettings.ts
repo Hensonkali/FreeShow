@@ -24,6 +24,12 @@ export interface AiSettings {
     // pre-loaded service passages - AI prioritizes matches from these
     servicePassages?: string[]
 
+    // verses that always auto-display (regardless of confidence)
+    whitelist?: string[]
+
+    // verses that never auto-display (always suggestion-only)
+    blacklist?: string[]
+
     scripture?: AiScriptureSettings
 }
 

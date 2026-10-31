@@ -372,12 +372,21 @@ export class AiManager {
         // output lock: detect and log, but never auto-present or change output
         if (get(aiOutputLocked)) return { play: false, reason: "output_locked" }
 
+        const whitelist = get(ai)?.whitelist || []
+        const blacklist = get(ai)?.blacklist || []
+
+        // blacklist: never auto-display, regardless of confidence
+        if (blacklist.includes(match.content)) return { play: false, reason: "blacklisted" }
+
         // embedding paraphrase matches are suggestions only, never auto-displayed
         if (match.suggestOnly) return { play: false, reason: "suggest_only" }
         if (match.type === "scripture_version") return { play: false, reason: "version_switch" }
         if (match.type !== "scripture") return { play: false, reason: "unsupported_type" } // WIP currently only auto-plays scripture matches
 
         if (match.scriptureIsNewTranslation) return { play: false, reason: "new_translation" }
+
+        // whitelist: always auto-display (bypasses confidence floor and user setting)
+        if (whitelist.includes(match.content)) return { play: true, reason: "whitelisted" }
 
         // never auto-play low confidence matches
         if (match.confidence <= 50) return { play: false, reason: "low_confidence" }

@@ -1903,6 +1903,10 @@
         "overlay_hint": "Approve to show on screen, or skip to dismiss. Auto-dismisses in 10 seconds.",
         "service_passages": "Service passages",
         "service_passage_placeholder": "e.g. John 3:16",
-        "add": "Add"
+        "add": "Add",
+        "whitelist_title": "Always auto-display (whitelist)",
+        "whitelist_placeholder": "e.g. Psalm 23:1",
+        "blacklist_title": "Never auto-display (blacklist)",
+        "blacklist_placeholder": "e.g. John 3:16"
     }
 }

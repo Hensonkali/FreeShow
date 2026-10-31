@@ -42,6 +42,46 @@
             return a
         })
     }
+
+    let newWhitelist = ""
+
+    function addWhitelist() {
+        const p = newWhitelist.trim()
+        if (!p) return
+        ai.update((a) => {
+            if (!a.whitelist) a.whitelist = []
+            if (!a.whitelist.includes(p)) a.whitelist.push(p)
+            return a
+        })
+        newWhitelist = ""
+    }
+
+    function removeWhitelist(index: number) {
+        ai.update((a) => {
+            if (a.whitelist) a.whitelist.splice(index, 1)
+            return a
+        })
+    }
+
+    let newBlacklist = ""
+
+    function addBlacklist() {
+        const p = newBlacklist.trim()
+        if (!p) return
+        ai.update((a) => {
+            if (!a.blacklist) a.blacklist = []
+            if (!a.blacklist.includes(p)) a.blacklist.push(p)
+            return a
+        })
+        newBlacklist = ""
+    }
+
+    function removeBlacklist(index: number) {
+        ai.update((a) => {
+            if (a.blacklist) a.blacklist.splice(index, 1)
+            return a
+        })
+    }
 </script>
 
 <div class="experimental">EXPERIMENTAL!</div>
@@ -96,6 +136,60 @@
                     <div class="passage-item">
                         <span>{passage}</span>
                         <MaterialButton variant="outlined" icon="remove" on:click={() => removePassage(i)} />
+                    </div>
+                {/each}
+            </div>
+        {/if}
+    </div>
+
+    <div class="whitelist-blacklist">
+        <div class="section-title">{translateText("ai.whitelist_title")}</div>
+        <div class="passage-input">
+            <input
+                type="text"
+                placeholder="{translateText('ai.whitelist_placeholder')}"
+                bind:value={newWhitelist}
+                on:keydown={(e) => {
+                    if (e.key === "Enter") addWhitelist()
+                }}
+            />
+            <MaterialButton variant="outlined" icon="add" on:click={addWhitelist}>
+                <T id="ai.add" />
+            </MaterialButton>
+        </div>
+        {#if $ai.whitelist?.length}
+            <div class="passage-list">
+                {#each $ai.whitelist as passage, i}
+                    <div class="passage-item">
+                        <span>{passage}</span>
+                        <MaterialButton variant="outlined" icon="remove" on:click={() => removeWhitelist(i)} />
+                    </div>
+                {/each}
+            </div>
+        {/if}
+    </div>
+
+    <div class="whitelist-blacklist">
+        <div class="section-title">{translateText("ai.blacklist_title")}</div>
+        <div class="passage-input">
+            <input
+                type="text"
+                placeholder="{translateText('ai.blacklist_placeholder')}"
+                bind:value={newBlacklist}
+                on:keydown={(e) => {
+                    if (e.key === "Enter") addBlacklist()
+                }}
+            />
+            <MaterialButton variant="outlined" icon="add" on:click={addBlacklist}>
+                <T id="ai.add" />
+            </MaterialButton>
+        </div>
+        {#if $ai.blacklist?.length}
+            <div class="passage-list">
+                {#each $ai.blacklist as passage, i}
+                    <div class="passage-item">
+                        <span>{passage}</span>
+                        <MaterialButton variant="outlined" icon="remove" on:click={() => removeBlacklist(i)} />
                     </div>
                 {/each}
             </div>
@@ -201,5 +295,9 @@
         padding: 6px 10px;
         background: rgba(255, 255, 255, 0.05);
         border-radius: 4px;
+    }
+
+    .whitelist-blacklist {
+        margin: 16px 0;
     }
 </style>
