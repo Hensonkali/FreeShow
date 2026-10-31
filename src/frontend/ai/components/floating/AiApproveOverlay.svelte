@@ -5,6 +5,7 @@
     import { logDecisionDeduped } from "../../logging/decisionLog"
     import T from "../../../components/helpers/T.svelte"
     import ConfidenceMeter from "./ConfidenceMeter.svelte"
+    import MaterialButton from "../../../components/inputs/MaterialButton.svelte"
 
     let show = false
     let currentSuggestion: any = null

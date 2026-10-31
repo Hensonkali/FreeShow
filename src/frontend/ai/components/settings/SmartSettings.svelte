@@ -25,6 +25,23 @@
 
     let newPassage = ""
 
+    $: noiseGateValue = $ai.stt?.engineOptions?.nemotron?.noiseGateThreshold ?? 0.05
+
+    function setNoiseGate(val: number) {
+        ai.update((a) => {
+            if (!a.stt) a.stt = {}
+            if (!a.stt.engineOptions) a.stt.engineOptions = {}
+            if (!a.stt.engineOptions.nemotron) a.stt.engineOptions.nemotron = {}
+            a.stt.engineOptions.nemotron.noiseGateThreshold = val
+            return a
+        })
+    }
+
+    function setNoiseGateInput(e: Event) {
+        const target = e.target as HTMLInputElement
+        setNoiseGate(parseFloat(target.value) / 100)
+    }
+
     function addPassage() {
         const p = newPassage.trim()
         if (!p) return
@@ -206,17 +223,8 @@
             min="0"
             max="100"
             step="5"
-            bind:value={$ai.stt?.engineOptions?.nemotron?.noiseGateThreshold ?? 0.05}"
-            on:input={(e) => {
-                const val = parseFloat((e.target as HTMLInputElement).value) / 100
-                ai.update((a) => {
-                    if (!a.stt) a.stt = {}
-                    if (!a.stt.engineOptions) a.stt.engineOptions = {}
-                    if (!a.stt.engineOptions.nemotron) a.stt.engineOptions.nemotron = {}
-                    a.stt.engineOptions.nemotron.noiseGateThreshold = val
-                    return a
-                })
-            }}
+            value={noiseGateValue}
+            on:input={(e) => setNoiseGateInput(e)}
         />
     </div>
     <Tip type="info" value="ai.noise_gate_hint" top={10} />

@@ -5,7 +5,7 @@
     import MaterialButton from "../../../components/inputs/MaterialButton.svelte"
     import Center from "../../../components/system/Center.svelte"
     import { AiManager } from "../../manager/AiManager"
-    import { aiOutputLocked, aiSmartAction, aiSuggestions, outLocked, scriptures, sttTranscript } from "../../../stores"
+    import { aiOutputLocked, aiSmartAction, aiSuggestions, aiSttStatus, outLocked, scriptures, sttTranscript } from "../../../stores"
     import { translateText } from "../../../utils/language"
     import { logDecisionDeduped } from "../../logging/decisionLog"
     import { Transcript } from "../../stt/transcript"
