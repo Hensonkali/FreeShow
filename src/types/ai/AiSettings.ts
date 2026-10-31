@@ -48,6 +48,9 @@ export interface SttEngineOptions {
     interpretationMode?: boolean
     listenLanguage?: string
     spokenLanguages?: string[]
+
+    // noise gate: audio below this RMS level is not sent for transcription (0-1)
+    noiseGateThreshold?: number
 }
 
 interface LlmSettings {

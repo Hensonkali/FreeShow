@@ -18,7 +18,8 @@
     import TooltipManager from "./components/main/TooltipManager.svelte"
     import QuickSearch from "./components/quicksearch/QuickSearch.svelte"
     import Center from "./components/system/Center.svelte"
-    import { activeProfile, activeTimers, closeAd, currentWindow, disabledServers, events, language, loaded, localeDirection, os, outputDisplay, outputs, profiles, theme, themes, timers } from "./stores"
+    import AiApproveOverlay from "./ai/components/floating/AiApproveOverlay.svelte"
+    import { activeProfile, activeTimers, aiOutputLocked, closeAd, currentWindow, disabledServers, events, language, loaded, localeDirection, os, outputDisplay, outputs, profiles, theme, themes, timers } from "./stores"
     import { focusArea, logerror, mainClick, toggleRemoteStream } from "./utils/common"
     import { keydown } from "./utils/shortcuts"
     import { startup } from "./utils/startup"
@@ -90,6 +91,8 @@
             <ProgressPanel />
 
             <MainLayout />
+
+            <AiApproveOverlay />
 
             {#if ready && Object.keys($profiles).filter((a) => a !== "admin").length && $activeProfile === null}
                 <ProfileSelector />

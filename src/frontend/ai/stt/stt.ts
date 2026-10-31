@@ -192,6 +192,8 @@ export class SpeechToText {
             this.captureNode = captureNode
 
             captureNode.port.onmessage = (e) => {
+                // noise gate: skip silence to save CPU and avoid false detections
+                if (get(audioLevelStore) < (get(ai)?.stt?.noiseGateThreshold ?? 0.05)) return
                 sendMain(Main.AI_AUDIO_DATA, { buffer: e.data })
             }
 

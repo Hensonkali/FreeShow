@@ -1887,8 +1887,19 @@
         "lock_output": "Lock output",
         "lock_output_hint": "AI detects and logs, but never auto-displays or lets voice commands change the screen.",
         "unlock_output": "Unlock output",
+        "feature_reference": "Reference detection",
+        "feature_content": "Content matching",
+        "feature_embedding": "Paraphrase (embedding)",
+        "feature_voice": "Voice commands",
+        "noise_gate": "Noise gate",
+        "noise_gate_hint": "Audio below this level is not sent for transcription. Helps on noisy rooms."
         "paraphrase_search": "Paraphrase search",
         "paraphrase_search_hint": "Catches reworded verses with a small local AI model. Turn it off on machines with 4 GB RAM or less.",
-        "undo_last": "Undo last AI action"
+        "undo_last": "Undo last AI action",
+        "heard": "Heard",
+        "verse": "Detected verse",
+        "present": "Present",
+        "skip": "Skip",
+        "overlay_hint": "Approve to show on screen, or skip to dismiss. Auto-dismisses in 10 seconds."
     }
 }
