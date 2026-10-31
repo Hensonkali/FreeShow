@@ -12,6 +12,15 @@ export interface AiSettings {
     // paraphrase search with the local embedding model (disable on very small machines)
     paraphraseSearch?: boolean
 
+    // which detection features are enabled (disable heavy ones on small machines)
+    features?: {
+        reference?: boolean   // exact reference detection
+        content?: boolean     // TF-IDF content matching
+        embedding?: boolean   // semantic paraphrase matching (heaviest)
+        llm?: boolean         // cloud LLM detection
+        voice?: boolean       // voice command processing
+    }
+
     scripture?: AiScriptureSettings
 }
 

@@ -29,43 +29,96 @@ export class AiManager {
         const searchId = ++this.latestSearchId
         const isCancelled = () => searchId !== this.latestSearchId
 
+        // cache check: skip re-processing identical chunks
+        const chunkText = chunk.chunkWithOverlap.trim()
+        if (chunkText) {
+            const cached = this.getCachedDetection(chunkText)
+            if (cached) {
+                if (cached.match) {
+                    this.newMatch(cached.match, chunkText)
+                    this.lastMatch = Date.now()
+                }
+                return
+            }
+        }
+
+        // feature gates
+        const features = get(ai)?.features || {}
+        const voiceEnabled = features.voice !== false
+        const referenceEnabled = features.reference !== false
+        const contentEnabled = features.content !== false
+        const embeddingEnabled = features.embedding !== false
+        const llmEnabled = features.llm !== false
+
         // explicit voice commands execute immediately ("next verse", "give me NLT")
-        const commandHandled = await this.voiceCommandDetection(chunk.chunkWithOverlap, isCancelled)
-        if (isCancelled()) return
-        if (commandHandled) {
-            this.lastMatch = Date.now()
-            return
+        if (voiceEnabled) {
+            const commandHandled = await this.voiceCommandDetection(chunk.chunkWithOverlap, isCancelled)
+            if (isCancelled()) return
+            if (commandHandled) {
+                this.lastMatch = Date.now()
+                return
+            }
         }
 
-        const stringMatch = await this.stringDetection(chunk.chunkWithOverlap, isCancelled)
-        if (isCancelled()) return
+        if (referenceEnabled || contentEnabled) {
+            const stringMatch = await this.stringDetection(chunk.chunkWithOverlap, isCancelled)
+            if (isCancelled()) return
 
-        if (stringMatch) {
-            this.newMatch(stringMatch, chunk.chunkWithOverlap)
-            this.lastMatch = Date.now()
-            return
+            if (stringMatch) {
+                this.newMatch(stringMatch, chunk.chunkWithOverlap)
+                this.lastMatch = Date.now()
+                this.cacheDetection(chunkText, stringMatch)
+                return
+            }
         }
 
-        const embedMatch = await this.embeddingDetection(chunk.chunkWithOverlap, isCancelled)
-        if (isCancelled()) return
+        if (embeddingEnabled) {
+            const embedMatch = await this.embeddingDetection(chunk.chunkWithOverlap, isCancelled)
+            if (isCancelled()) return
 
-        // embedding matches are suggestions only (enforced again in shouldAutoPlay)
-        if (embedMatch) {
-            this.newMatch(embedMatch, chunk.chunkWithOverlap)
-            this.lastMatch = Date.now()
-            return
+            // embedding matches are suggestions only (enforced again in shouldAutoPlay)
+            if (embedMatch) {
+                this.newMatch(embedMatch, chunk.chunkWithOverlap)
+                this.lastMatch = Date.now()
+                this.cacheDetection(chunkText, embedMatch)
+                return
+            }
         }
 
         if (this.lastMatch && Date.now() - this.lastMatch < this.MAX_LLM_REQUEST_AFTER_MATCH) return
 
-        const llmManager = getLLMManager()
-        if (!llmManager) return
+        if (llmEnabled) {
+            const llmManager = getLLMManager()
+            if (!llmManager) return
 
-        // only report to LLM if nothing is auto detected
-        const llmMatch = await llmManager.detectMatch(chunk)
-        if (llmMatch) {
-            this.newMatch(llmMatch, chunk.chunkWithOverlap)
-            this.lastMatch = Date.now()
+            // only report to LLM if nothing is auto detected
+            const llmMatch = await llmManager.detectMatch(chunk)
+            if (llmMatch) {
+                this.newMatch(llmMatch, chunk.chunkWithOverlap)
+                this.lastMatch = Date.now()
+                this.cacheDetection(chunkText, llmMatch)
+            }
+        }
+    }
+
+    private static getCachedDetection(chunkText: string): { match: MatchResult | null } | null {
+        const entry = this.detectionCache.get(chunkText)
+        if (!entry) return null
+        if (Date.now() - entry.at > this.DETECTION_CACHE_TTL) {
+            this.detectionCache.delete(chunkText)
+            return null
+        }
+        return entry
+    }
+
+    private static cacheDetection(chunkText: string, match: MatchResult | null) {
+        this.detectionCache.set(chunkText, { match, at: Date.now() })
+        // prune old entries to prevent unbounded growth
+        if (this.detectionCache.size > 200) {
+            const now = Date.now()
+            for (const [k, v] of this.detectionCache.entries()) {
+                if (now - v.at > this.DETECTION_CACHE_TTL) this.detectionCache.delete(k)
+            }
         }
     }
 
@@ -302,6 +355,8 @@ export class AiManager {
     private static REPEAT_COOLDOWN_MS = 5 * 60 * 1000
     private static lastPresented: { content: string; at: number } | null = null
     private static previousLiveContent: string | null = null
+    private static detectionCache: Map<string, { match: MatchResult | null; at: number }> = new Map()
+    private static DETECTION_CACHE_TTL = 30000 // 30 seconds
 
     private static autoPlayDecision(match: MatchResult): { play: boolean; reason: string } {
         // shadow mode: detect and log, never display (rehearse on recorded sermons)

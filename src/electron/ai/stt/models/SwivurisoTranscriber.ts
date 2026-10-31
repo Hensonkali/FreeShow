@@ -12,7 +12,7 @@ import { buildWavHeader } from "./wav"
 // On slow CPUs a transcription can take longer than the chunk, so busy periods
 // DROP chunks instead of queuing — detection keeps following the speaker.
 
-const CHUNK_MS = 6000
+const CHUNK_MS = 3000
 const SAMPLES_PER_MS = 16 // 16 kHz
 const CONFIDENCE = 75 // fixed estimate; whisper-cli prints no token probabilities
 
