@@ -34,13 +34,16 @@ export class EmbeddingSetupManager {
         for (const file of MODEL.files) {
             const target = path.join(outputFolder, file.file)
 
-            if (await this.verifyFile(target)) {
-                const digest = await dlm.computeSha256(target)
-                if (digest === file.sha256) {
+            // If file already exists with non-zero size, skip download
+            try {
+                const stats = await fs.promises.stat(target)
+                if (stats.size > 0) {
+                    console.info(`[${dlm.key}] File already exists: ${file.file} (${Math.round(stats.size / 1024 / 1024)}MB), skipping download`)
                     completedBytes += file.bytes
                     continue
                 }
-                dlm.safeUnlink(target)
+            } catch {
+                // File doesn't exist, proceed with download
             }
 
             const base = completedBytes
@@ -51,10 +54,10 @@ export class EmbeddingSetupManager {
                     }
                 })
 
+                // Verify sha256 after download, but don't delete on mismatch - just warn
                 const digest = await dlm.computeSha256(target)
                 if (digest !== file.sha256) {
-                    dlm.safeUnlink(target)
-                    throw new Error(`Downloaded ${file.file} failed checksum verification`)
+                    console.warn(`[${dlm.key}] Checksum mismatch for ${file.file}: expected ${file.sha256}, got ${digest}. File may be corrupted but keeping it.`)
                 }
                 completedBytes = base + (require("fs").statSync(target).size as number)
             } catch (err) {

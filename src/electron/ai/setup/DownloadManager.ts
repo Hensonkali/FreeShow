@@ -58,6 +58,19 @@ export class DownloadManager {
         await fs.promises.mkdir(path.dirname(destPath), { recursive: true })
         if (controller.signal.aborted) throw Object.assign(new Error("This operation was aborted"), { name: "AbortError" })
 
+        // If destination already exists with non-zero size, skip download entirely
+        try {
+            const stats = await fs.promises.stat(destPath)
+            if (stats.size > 0) {
+                if (options.totalBytes && stats.size === options.totalBytes) {
+                    console.info(`[${this.key}] File already complete: ${destPath}`)
+                    return
+                }
+            }
+        } catch {
+            // File doesn't exist, proceed with download
+        }
+
         let totalBytes = options.totalBytes || 0
 
         try {
