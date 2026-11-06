@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/electron/main"
 import type { BrowserWindow, DesktopCapturerSource } from "electron"
 import { app, desktopCapturer, screen, shell, systemPreferences } from "electron"
 import os from "os"
@@ -8,19 +7,14 @@ import type { MainResponses } from "../../types/IPC/Main"
 import { Main } from "../../types/IPC/Main"
 import { ToMain } from "../../types/IPC/ToMain"
 import type { ErrorLog, LyricSearchResult, OS } from "../../types/Main"
-import { completeLLM, fetchProviderModels } from "../ai/llm/llmProviders"
 import { embedDownload, embedIndex, embedQuery, embedStatus } from "../ai/embed/embedResponses"
 import { appendDecisionLog } from "../ai/logging/decisionLog"
-import { setAiKey } from "../ai/setup/aiKeys"
 import { aiHandleLocalSetup, LocalModelManager } from "../ai/setup/LocalModelManager"
 import { aiGetModelStatus } from "../ai/setup/status"
 import { SpeechToText } from "../ai/stt/SpeechToTextManager"
 import { getAudioMetadata } from "../audio/audio"
 import { openNowPlaying, setPlayingState, unsetPlayingAudio } from "../audio/nowPlaying"
 import { CaptureHelper } from "../capture/CaptureHelper"
-import { canSync, getSyncTeams, hasTeamData, markAsNewSync, restoreCloudBackup, syncData } from "../cloud/syncManager"
-import { ChurchAppsChat } from "../contentProviders/churchApps/ChurchAppsChat"
-import { ContentProviderRegistry } from "../contentProviders/ContentProviderRegistry"
 import { deleteBackup, getBackups, restoreFiles } from "../data/backup"
 import { getLocalIPs } from "../data/bonjour"
 import { checkIfMediaDownloaded, downloadLessonsMedia, downloadMedia } from "../data/downloadMedia"
@@ -37,15 +31,13 @@ import { downloadFfmpeg, resolveFfmpegPath } from "../streaming/ffmpegManager"
 import { processAudioData, timecodeStart, timecodeStop, updateTimecodeValue } from "../timecode/timecode"
 import { apiReturnData, emitOSC, startWebSocketAndRest, stopApiListener } from "../utils/api"
 import { closeMain } from "../utils/close"
-import { addToMediaFolder, bundleMediaFiles, createFolder, getDataFolderPath, getDataFolderRoot, getFileInfo, getMediaCodec, getMediaSyncFolderPath, getMediaTracks, getPaths, getSimularPaths, loadFile, loadShowsAsync, locateMediaFile, openInSystem, readExifData, readFile, readFolder, readFolderContent, selectFiles, selectFilesDialog, selectFolder, setMediaSyncFolderPath, writeFile } from "../utils/files"
+import { addToMediaFolder, bundleMediaFiles, createFolder, getDataFolderPath, getDataFolderRoot, getFileInfo, getMediaCodec, getMediaTracks, getPaths, getSimularPaths, loadFile, loadShowsAsync, locateMediaFile, openInSystem, readExifData, readFile, readFolder, readFolderContent, selectFiles, selectFilesDialog, selectFolder, setMediaSyncFolderPath, writeFile } from "../utils/files"
 import { listGraphicsDevices } from "../utils/gpu"
 import { getMachineId } from "../utils/helpers"
-import { LyricSearch } from "../utils/LyricSearch"
 import { closeMidiInPorts, getMidiInputs, getMidiOutputs, receiveMidi, sendMidi } from "../utils/midi"
 import { deleteShows, deleteShowsNotIndexed, getAllShows, getEmptyShows, refreshAllShows } from "../utils/shows"
 import { correctSpelling } from "../utils/spellcheck"
 import { executeSpotifyCommand, getSpotifyState } from "../utils/spotify"
-import checkForUpdates from "../utils/updater"
 import { sendToMain } from "./main"
 
 // no need to await Promise returns here
@@ -71,7 +63,6 @@ export const mainResponses: MainResponses = {
     [Main.EVENTS]: () => getStore("EVENTS"),
     [Main.MEDIA]: () => getStore("MEDIA"),
     [Main.THEMES]: () => getStore("THEMES"),
-    [Main.DRIVE_API_KEY]: () => getStore("DRIVE_API_KEY"),
     [Main.HISTORY]: () => getStore("HISTORY"),
     [Main.USAGE]: () => getStore("USAGE"),
     [Main.CACHE]: () => getStore("CACHE"),
@@ -92,7 +83,7 @@ export const mainResponses: MainResponses = {
     [Main.SHOW]: (data) => loadShow(data),
     // MAIN
     [Main.SHOWS]: (() => loadShowsAsync()) as any,
-    [Main.AUTO_UPDATE]: () => checkForUpdates(),
+    [Main.SHOWS]: (() => loadShowsAsync()) as any,
     [Main.URL]: (data) => openURL(data),
     [Main.LANGUAGE]: (data) => setGlobalMenu(data.strings),
     [Main.GET_PATHS]: () => getPaths(),
@@ -162,9 +153,6 @@ export const mainResponses: MainResponses = {
     },
     [Main.RECEIVE_MIDI]: (data) => receiveMidi(data),
     [Main.CLOSE_MIDI]: (data) => closeMidiInPorts(data.id),
-    // LYRICS
-    [Main.GET_LYRICS]: (data) => getLyrics(data),
-    [Main.SEARCH_LYRICS]: (data) => searchLyrics(data),
     // FILES
     [Main.RESTORE]: (data) => restoreFiles(data),
     [Main.RECORDER]: (data) => saveRecording(data),
@@ -181,70 +169,7 @@ export const mainResponses: MainResponses = {
     [Main.READ_FILE]: (data) => ({ content: readFile(data.path) }),
     [Main.OPEN_FOLDER]: (data) => selectFolder(data),
     [Main.OPEN_FILE]: (data) => selectFiles(data),
-    // SYNC
-    [Main.CAN_SYNC]: (data) => canSync(data),
-    [Main.GET_TEAMS]: (data) => getSyncTeams(data),
-    [Main.CLOUD_DATA]: (data) => hasTeamData(data),
-    [Main.CLOUD_SYNC]: (data) => syncData(data),
-    [Main.RESTORE_CLOUD_BACKUP]: (data) => restoreCloudBackup(data),
-    [Main.GET_CONVERSATION_ID]: (data) => getConversationId(data.teamId),
-    [Main.SEND_SOCKET_MESSAGE]: (data) => sendSocketMessage(data),
-    // Provider-based routing
-    [Main.PROVIDER_LOAD_SERVICES]: async (data) => {
-        if (data.cloudOnly) markAsNewSync()
-        await ContentProviderRegistry.loadServices(data.providerId, data.cloudOnly || false, data.data)
-    },
-    [Main.PROVIDER_CONNECTIONS]: () => ContentProviderRegistry.getConnectedProviders(),
-    [Main.PROVIDER_DISCONNECT]: (data) => {
-        ContentProviderRegistry.disconnect(data.providerId, data.scope)
-        return { success: true }
-    },
-    [Main.PROVIDER_STARTUP_LOAD]: (data) => ContentProviderRegistry.startupLoad(data.providerId, data.scope || "", data.data, data.cloudOnly),
-    [Main.PROVIDER_FETCH_FOLDERS]: (data) => ContentProviderRegistry.fetchFolderTree(data.providerId),
-    [Main.PCO_FETCH_SERVICE_TREE]: () => ContentProviderRegistry.fetchServiceTree("planningcenter"),
-    [Main.PCO_LOAD_PLAN]: (data) => ContentProviderRegistry.loadSinglePlan(data.serviceTypeId, data.planId),
-    [Main.PCO_LIVE_GET]: (data) => ContentProviderRegistry.getPcoLiveData(data.serviceTypeId, data.planId).catch(() => null),
-    [Main.PCO_PUSHER_AUTH]: (data) => ContentProviderRegistry.getPcoPusherAuth(data.socketId, data.channelName, data.serviceTypeId),
-    [Main.ONSTAGE_GET_TEAMS]: () => ContentProviderRegistry.getOnStageTeams().catch(() => []),
-    [Main.ONSTAGE_SWITCH_TEAM]: (data) => ContentProviderRegistry.switchOnStageTeam(data.teamId).catch(() => ({ success: false })),
-    [Main.ONSTAGE_LOAD_SERVICE]: (data) => ContentProviderRegistry.loadOnStageService(data.serviceId, data.data),
-    // Content Library
-    [Main.GET_CONTENT_PROVIDERS]: () => {
-        const providers = ContentProviderRegistry.getAvailableProviders()
-        return providers.map((providerId) => {
-            const provider = ContentProviderRegistry.getProvider(providerId)
-            return {
-                providerId,
-                displayName: provider?.displayName || providerId,
-                hasContentLibrary: provider?.hasContentLibrary || false
-            }
-        })
-    },
-    [Main.GET_CONTENT_LIBRARY]: async (data) => {
-        const provider = ContentProviderRegistry.getProvider(data.providerId)
-        if (!provider?.getContentLibrary) {
-            console.error(`Provider ${data.providerId} does not support content library`)
-            return []
-        }
-        return await provider.getContentLibrary()
-    },
-    [Main.GET_PROVIDER_CONTENT]: async (data) => {
-        const provider = ContentProviderRegistry.getProvider(data.providerId)
-        if (!provider?.getContent) {
-            console.error(`Provider ${data.providerId} does not support getContent`)
-            return []
-        }
-        return await provider.getContent(data.key)
-    },
-    [Main.CHECK_MEDIA_LICENSE]: async (data) => {
-        const provider = ContentProviderRegistry.getProvider(data.providerId)
-        if (!provider?.checkMediaLicense) {
-            console.error(`Provider ${data.providerId} does not support checkMediaLicense`)
-            return null
-        }
-        return await provider.checkMediaLicense(data.mediaId)
-    },
-    // Timecode
+    // TIMECODE
     [Main.TIMECODE_START]: (data) => timecodeStart(data),
     [Main.TIMECODE_STOP]: () => timecodeStop(),
     [Main.TIMECODE_VALUE]: (data) => updateTimecodeValue(data),
@@ -264,7 +189,6 @@ export const mainResponses: MainResponses = {
     [Main.ENCODER_DETECT]: (data) => detectEncoders(data?.force),
     [Main.SET_RTMP_ENCODER]: (data) => {
         setRtmpEncoderSetting(data.outputId, data.encoder)
-        // apply now rather than lying dormant until some unrelated capture event restarts the encode
         CaptureHelper.Lifecycle.updateRtmpState()
     },
     [Main.FFMPEG_DOWNLOAD]: async () => {
@@ -369,13 +293,11 @@ function getVersion() {
 }
 
 async function getConversationId(teamId: string): Promise<string | null> {
-    return ChurchAppsChat.getOrCreateConversation(teamId)
+    return null
 }
 
 async function sendSocketMessage(data: { churchId: string; teamId: string; displayName: string; content: string }): Promise<boolean> {
-    const conversationId = await ChurchAppsChat.getOrCreateConversation(data.teamId)
-    if (!conversationId) return false
-    return ChurchAppsChat.sendMessage({ churchId: data.churchId, conversationId, displayName: data.displayName, content: data.content })
+    return false
 }
 
 function getOS() {
@@ -410,13 +332,11 @@ export const openURL = (url: string) => {
 }
 
 async function searchLyrics({ artist, title }: { artist: string; title: string }) {
-    const songs = await LyricSearch.search(artist, title)
-    return songs
+    return []
 }
 
 async function getLyrics({ song }: { song: LyricSearchResult }) {
-    const lyrics = await LyricSearch.get(song)
-    return { lyrics, source: song.source, title: song.title, artist: song.artist }
+    return { lyrics: "", source: song.source, title: song.title, artist: song.artist }
 }
 
 // GET DEVICE MEDIA PERMISSION
@@ -490,7 +410,6 @@ export function logError(log: ErrorLog, key: "main" | "renderer" | "request" = "
     if (previousLog.length > maxLogLength) previousLog = previousLog.slice(previousLog.length - maxLogLength)
     if (!previousLog.length) return
 
-    // _store.ERROR_LOG?.clear()
     _store.ERROR_LOG?.set({ [key]: previousLog })
 }
 
@@ -519,35 +438,3 @@ export function createLog(err: Error) {
         stack: err.stack
     } as ErrorLog
 }
-
-export function autoErrorReport() {
-    if (!isProd) return
-    if (config.get("autoErrorReporting") === false) return
-
-    // prevent random forks from sending error reports
-    // dots to prevent auto find/replace
-    const originalName = "f.r.e.e.s.h.o.w".replace(/\./g, "")
-    if (app.name !== originalName) return
-
-    console.info("Starting Sentry error reporting...")
-
-    Sentry.init({
-        dsn: "https://5d1069c3cb6faaa6e7ad0d9dc0145361@o4510419080445952.ingest.us.sentry.io/4510419082346496",
-        beforeSend(event) {
-            // filter out known non-critical errors
-            const errorMessage = event.exception?.values?.[0]?.value || ""
-            const shouldFilter = ERROR_FILTER.some((filter) => errorMessage.includes(filter))
-            return shouldFilter ? null : event
-        }
-    })
-}
-
-// STORE MEDIA AS BASE64
-// function storeMedia(files: { id: string; path: string }[]) {
-//     let encodedFiles: { id: string; content: string }[] = []
-//     files.forEach(({ id, path }) => {
-//         let content = readFile(path, "base64")
-//         encodedFiles.push({ id, content })
-//     })
-//     return encodedFiles
-// }

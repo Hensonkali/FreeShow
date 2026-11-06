@@ -13,7 +13,6 @@ import { triggerFunction } from "../../utils/common"
 import { obsSetScene, obsStartLivestream, obsStartRecording, obsStopLivestream, obsStopRecording } from "../../utils/obsTalk"
 import { save } from "../../utils/save"
 import { togglePlayingMedia } from "../../utils/shortcuts"
-import { contentProviderSync } from "../../utils/startup"
 import { updateTransition } from "../../utils/transitions"
 import { startMetronome } from "../drawer/audio/metronome"
 import { getInteraction, startInteraction, stopInteraction } from "../drawer/pages/interactions"
@@ -345,7 +344,6 @@ export const API_ACTIONS = {
     change_draw_zoom: (data: API_draw_zoom) => changeDrawZoom(data),
 
     // CONNECTION
-    sync_content_provider: () => contentProviderSync(),
     // sync_cloud_now
 
     // EMIT

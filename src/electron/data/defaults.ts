@@ -86,7 +86,33 @@ export const defaultSettings: { [key in SaveListSettings]: any } = {
         }
     },
     obsData: {},
-    ai: {}
+    ai: {
+        enabled: false,
+        stt: {
+            engine: "nemotron",
+            micDeviceId: null,
+            engineOptions: {},
+            autoDownloadModels: true
+        },
+        llm: {
+            provider: "ollama",
+            model: "qwen2.5:1.5b"
+        },
+        paraphraseSearch: false,
+        features: {
+            reference: true,
+            content: true,
+            embedding: false,
+            llm: true,
+            voice: true
+        },
+        servicePassages: [],
+        whitelist: [],
+        blacklist: [],
+        scripture: {
+            confidence: "ask"
+        }
+    },
 }
 
 export const defaultSyncedSettings: { [key in SaveListSyncedSettings]: any } = {
@@ -117,22 +143,15 @@ export const defaultSyncedSettings: { [key in SaveListSyncedSettings]: any } = {
     interactions: {},
     audioStreams: {},
     audioPlaylists: {},
-    scriptures: {
+        scriptures: {
         kjv: {
-            name: "King James (Authorised) Version",
-            api: true,
-            id: "de4e12af7f28f599-02",
-            copyright: "PUBLIC DOMAIN except in the United Kingdom, where a Crown Copyright applies to printing the KJV. See http://www.cambridge.org/about-us/who-we-are/queens-printers-patent"
+            name: "King James Version",
+            api: false,
+            id: "kjv",
+            copyright: "Public Domain"
         },
-        asv: { name: "The Holy Bible, American Standard Version", api: true, id: "06125adad2d5898a-01", copyright: "PUBLIC DOMAIN" },
-        web: { name: "World English Bible", api: true, id: "9879dbb7cfe39e4d-04", copyright: "PUBLIC DOMAIN" },
-        wmb: { name: "World Messianic Bible", api: true, id: "f72b840c855f362c-04", copyright: "PUBLIC DOMAIN" },
-        bsb: {
-            name: "Berean Study Bible",
-            api: true,
-            id: "bba9f40183526463-01",
-            copyright: "The Holy Bible, Berean Standard Bible, BSB is produced in cooperation with Bible Hub, Discovery Bible, OpenBible.com, and the Berean Bible Translation Committee. This text of God's Word has been dedicated to the public domain"
-        }
+        asv: { name: "American Standard Version", api: false, id: "asv", copyright: "Public Domain" },
+        web: { name: "World English Bible", api: false, id: "web", copyright: "Public Domain" }
     },
     scriptureSettings: {
         template: "scripture",

@@ -1,6 +1,7 @@
 // ----- FreeShow -----
 // This is the electron entry point
 
+import fs from "fs"
 import type { Rectangle } from "electron"
 import { BrowserWindow, Menu, app, ipcMain, powerSaveBlocker, protocol, screen } from "electron"
 import { AUDIO, BLACKMAGIC, CLOUD, EXPORT, MAIN, NDI, OMT, OUTPUT, STARTUP } from "../types/Channels"
@@ -159,6 +160,9 @@ async function startApp() {
     registerProtectedProtocol()
     cleanupProtectedCache().catch((err) => console.error("Protected cache cleanup failed:", err))
 
+    // Copy offline Bibles to data folder on first run
+    await copyBiblesToDataFolder()
+
     // Start servers initialization early (asynchronously)
     Promise.resolve()
         .then(() => {
@@ -172,6 +176,46 @@ async function startApp() {
 
     // prevent display sleeping
     powerSaveBlockerId = powerSaveBlocker.start("prevent-display-sleep")
+}
+
+// Copy Bible files from public/bibles/ to <dataPath>/scriptures/ on first run
+async function copyBiblesToDataFolder() {
+    try {
+        const { app } = require("electron")
+        const dataFolderPath = path.join(app.getPath("userData"), "FreeShow")
+        const scripturesFolder = path.join(dataFolderPath, "scriptures")
+        const sourceFolder = path.join(__dirname, "../../public/bibles")
+
+        // Create scriptures folder if it doesn't exist
+        try {
+            await fs.promises.mkdir(scripturesFolder, { recursive: true })
+        } catch (err) {
+            // Folder already exists
+        }
+
+        // Copy each .fsb file if it doesn't already exist
+        const bibleFiles = ["kjv.fsb", "web.fsb", "asv.fsb"]
+        for (const fileName of bibleFiles) {
+            const sourcePath = path.join(sourceFolder, fileName)
+            const destPath = path.join(scripturesFolder, fileName)
+
+            try {
+                await fs.promises.access(destPath)
+                // File already exists, skip
+            } catch {
+                // File doesn't exist, copy it
+                try {
+                    await fs.promises.copyFile(sourcePath, destPath)
+                    console.info(`[bibels] Copied ${fileName} to data folder`)
+                } catch (err) {
+                    console.error(`[bibels] Failed to copy ${fileName}:`, err)
+                }
+            }
+        }
+        console.info("[bibels] Bible files check complete")
+    } catch (err) {
+        console.error("[bibels] Failed to copy Bible files:", err)
+    }
 }
 
 function requestHeaders() {

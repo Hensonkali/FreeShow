@@ -6,7 +6,7 @@ const API_URL = "http://127.0.0.1:11434"
 
 class OllamaProvider extends APIModel {
     readonly id = "ollama"
-    readonly fallbackModel = "gemma3:4b"
+    readonly fallbackModel = "qwen2.5:1.5b"
 
     async fetchModels(): Promise<ModelOption[]> {
         try {

@@ -115,9 +115,8 @@ import {
     videoMarkers
 } from "../stores"
 import type { SaveActions, SaveData, SaveList, SaveListSettings, SaveListSyncedSettings } from "./../../types/Save"
-import { isSyncing, socketDisconnect, syncWithCloud } from "./cloudSync"
+// Cloud sync disabled - offline mode
 import { newToast, setStatus, startAutosave } from "./common"
-import { syncDrive } from "./drive"
 import { autoDisableRemoteController, stopRemoteController } from "./remoteController"
 
 export function save(closeWhenFinished = false, customTriggers: SaveActions = {}) {
@@ -306,14 +305,13 @@ export async function saveComplete({ closeWhenFinished, customTriggers }: { clos
 
         let shouldSync = true
         if (customTriggers?.autosave) {
-            // don't sync if already saved or if a slide is currently outputted or if cloud sync is in progress
-            if (alreadySaved || !isOutCleared("slide") || isSyncing) shouldSync = false
+            // don't sync if already saved or if a slide is currently outputted
+            if (alreadySaved || !isOutCleared("slide")) shouldSync = false
         }
 
-        if (shouldSync) await syncWithCloud(false, closeWhenFinished)
+        if (shouldSync) await syncDrive(false, closeWhenFinished)
 
         if (closeWhenFinished) {
-            await socketDisconnect()
             closeApp()
         }
         return
@@ -321,15 +319,9 @@ export async function saveComplete({ closeWhenFinished, customTriggers }: { clos
 
     if (customTriggers?.backup || customTriggers?.reset) return
 
-    // DEPRECATED drive sync
-    const mainFolderId = get(driveData)?.mainFolderId
-    if (!mainFolderId || get(driveData)?.disabled === true || !Object.keys(get(driveKeys)).length) {
-        if (closeWhenFinished) closeApp()
+    if (closeWhenFinished) closeApp()
 
-        return
-    }
-
-    syncDrive(false, closeWhenFinished)
+    return
 }
 
 export function initializeClosing(skipPopup = false) {

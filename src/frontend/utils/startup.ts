@@ -1,16 +1,11 @@
 import { get } from "svelte/store"
-import type { ContentProviderId } from "../../electron/contentProviders/base/types"
 import { OUTPUT, STARTUP } from "../../types/Channels"
 import { Main } from "../../types/IPC/Main"
 import { checkStartupActions } from "../components/actions/actions"
-import { syncIcsCalendars } from "../components/drawer/calendar/calendars"
-import { ensureRequiredModels } from "../ai/setup/autoDownload"
 import { getTimeFromInterval } from "../components/helpers/time"
 import { requestMain, requestMainMultiple, sendMain, sendMainMultiple } from "../IPC/main"
 import { cameraManager } from "../media/cameraManager"
-import { activePopup, activeProfile, alertMessage, cachePath, cloudSyncData, contentProviderData, currentWindow, dataPath, deviceId, driveKeys, isDev, loaded, loadedState, os, profiles, providerConnections, shows, special, version, windowState } from "../stores"
-import { startTracking } from "./analytics"
-import { setupCloudSync } from "./cloudSync"
+import { activePopup, activeProfile, alertMessage, cachePath, currentWindow, dataPath, deviceId, isDev, loaded, loadedState, os, profiles, version, windowState } from "../stores"
 import { wait, waitUntilValueIsDefined } from "./common"
 import { getDefaultElements } from "./createData"
 import { setLanguage } from "./language"
@@ -49,7 +44,6 @@ export async function startup() {
             }
 
             startupProfile = msg.autoProfile
-
             startupMain()
         },
         "startup"
@@ -78,26 +72,15 @@ async function startupMain() {
     if (!hasProfiles || get(activeProfile) !== null) checkStartupActions()
 
     startTracking()
-    contentProviderSync(true)
-
-    // custom alert
-    // if (Math.random() < 0.01) {
-    //     alertMessage.set("")
-    //     activePopup.set("alert")
-    // }
 
     await wait(2000)
 
     autoBackup()
     await wait(3000)
 
-    // download missing openly-licensed AI models in the background (resumable)
-    ensureRequiredModels()
-
     unsavedUpdater()
     windowFocusListener()
     cameraManager.initializeCameraWarming()
-    syncIcsCalendars()
 
     // CHECK LISTENERS
     // console.log(window.api.getListeners())
@@ -139,73 +122,20 @@ function autoBackup() {
     }
 }
 
-const lastProviderSyncs: Partial<Record<ContentProviderId, number>> = {}
-export function contentProviderSync(startup = false, remainingOnly = false) {
-    const isCloudSyncEnabled = get(cloudSyncData).enabled && get(cloudSyncData).id
-
-    if (isCloudSyncEnabled && !remainingOnly) {
-        setupCloudSync(startup)
-        return
-    }
-
-    const providers = [
-        { providerId: "planningcenter" as ContentProviderId, scope: "services", data: get(contentProviderData).planningcenter?.syncFolderIds || [], autoSync: get(contentProviderData).planningcenter?.autoSync !== false },
-        { providerId: "churchApps" as ContentProviderId, scope: "plans", data: { shows: get(shows), categories: get(contentProviderData).churchApps?.syncCategories || [] } },
-        { providerId: "amazinglife" as ContentProviderId, scope: "openid profile email" },
-        { providerId: "onstage" as ContentProviderId, scope: "presenter", data: get(contentProviderData).onstage || {}, autoSync: get(contentProviderData).onstage?.autoSync !== false }
-    ]
-
-    providers.forEach(({ providerId, scope, data, autoSync }) => {
-        if (startup && autoSync === false) return
-
-        // make sure the same provider does not run multiple times at once
-        const now = Date.now()
-        const lastSync = lastProviderSyncs[providerId] || 0
-        if (now - lastSync < 5000) return
-        lastProviderSyncs[providerId] = now
-
-        const cloudOnly = providerId === "churchApps" && get(special).churchAppsCloudOnly
-        sendMain(Main.PROVIDER_STARTUP_LOAD, { providerId, scope, data, cloudOnly })
-    })
-
-    setTimeout(() => {
-        if (get(cloudSyncData).id) return
-
-        const hasDriveSync = typeof get(driveKeys) === "object" && Object.keys(get(driveKeys)).length
-        if (!Object.keys(get(providerConnections)).length && !get(activePopup) && Math.random() < (hasDriveSync ? 0.2 : 0.001)) {
-            alertMessage.set("You can now set up free cloud sync with ChurchApps! Go to Settings>Files to log in." + (hasDriveSync ? "<br>It's recommended to switch over from your current Google Sync!" : ""))
-            activePopup.set("alert")
-        }
-    }, 2000)
-}
-
-function getMainData() {
+async function getMainData() {
     requestMainMultiple({
         [Main.VERSION]: (a) => (a ? version.set(a) : null),
-        [Main.IS_DEV]: (a) => isDev.set(a || false),
+        [Main.IS_DEV]: (a) => (a ? isDev.set(a) : null),
         [Main.GET_OS]: (a) => (a ? os.set(a) : null),
         [Main.GET_CACHE_PATH]: (a) => cachePath.set(a || ""),
         [Main.DEVICE_ID]: (a) => deviceId.set(a || ""),
         [Main.MAXIMIZED]: (a) => windowState.set({ ...get(windowState), maximized: a ?? false }),
         [Main.DATA_PATH]: (a) => (a ? dataPath.set(a) : null),
-        // get connected providers, even before the first sync of the session
-        [Main.PROVIDER_CONNECTIONS]: (a) => {
-            if (!a) return
-            providerConnections.update((c) => {
-                Object.keys(a).forEach((providerId) => {
-                    // churchApps is handled separately, due to cloud sync
-                    if (providerId === "churchApps") return
-
-                    c[providerId as ContentProviderId] = true
-                })
-                return c
-            })
-        }
     })
 }
 
 async function getStoredData() {
-    sendMainMultiple([Main.SYNCED_SETTINGS, Main.STAGE, Main.PROJECTS, Main.OVERLAYS, Main.TEMPLATES, Main.EVENTS, Main.MEDIA, Main.THEMES, Main.DRIVE_API_KEY, Main.HISTORY, Main.CACHE, Main.USAGE])
+    sendMainMultiple([Main.SYNCED_SETTINGS, Main.STAGE, Main.PROJECTS, Main.OVERLAYS, Main.TEMPLATES, Main.EVENTS, Main.MEDIA, Main.THEMES, Main.HISTORY, Main.CACHE, Main.USAGE])
 
     await waitUntilValueIsDefined(() => get(loadedState).includes("synced_settings"), 200, 8000)
     sendMain(Main.SETTINGS)
@@ -214,6 +144,10 @@ async function getStoredData() {
     sendMain(Main.SHOWS)
 
     getDefaultElements()
+}
+
+export function contentProviderSync(startup: boolean = false, remainingOnly = false) {
+    // Cloud sync disabled - no-op
 }
 
 async function startupOutput() {
