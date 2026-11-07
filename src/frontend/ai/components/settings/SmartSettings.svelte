@@ -185,10 +185,13 @@
 
 <style>
     .experimental {
-        color: red;
-        text-align: center;
-        font-weight: bold;
-        margin-bottom: 20px;
+        color: var(--secondary);
+        font-size: 0.75em;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        opacity: 0.75;
+        margin-bottom: 12px;
     }
 
     .ai-feature-group {
