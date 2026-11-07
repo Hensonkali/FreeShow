@@ -24,7 +24,7 @@ async function ensureNemotronModel() {
     if (resolveSttEngine() !== "nemotron") return
     if (get(ai)?.stt?.autoDownloadModels === false) return
 
-    let status = null
+    let status: any = null
     try {
         status = await getNemotronStatus()
     } catch {
@@ -67,7 +67,7 @@ async function ensureEmbeddingModel() {
     if (!get(ai)?.enabled) return
     if (get(ai)?.paraphraseSearch === false) return
 
-    let status = null
+    let status: any = null
     try {
         status = await requestMain(Main.AI_EMBED_STATUS)
     } catch {

@@ -14,11 +14,11 @@ export interface AiSettings {
 
     // which detection features are enabled (disable heavy ones on small machines)
     features?: {
-        reference?: boolean   // exact reference detection
-        content?: boolean     // TF-IDF content matching
-        embedding?: boolean   // semantic paraphrase matching (heaviest)
-        llm?: boolean         // cloud LLM detection
-        voice?: boolean       // voice command processing
+        reference?: boolean // exact reference detection
+        content?: boolean // TF-IDF content matching
+        embedding?: boolean // semantic paraphrase matching (heaviest)
+        llm?: boolean // cloud LLM detection
+        voice?: boolean // voice command processing
     }
 
     // pre-loaded service passages - AI prioritizes matches from these
@@ -38,6 +38,8 @@ interface SttSettings {
     micDeviceId?: string
 
     engine?: string
+    // noise gate: skip audio below this RMS level (0-1) to save CPU and avoid false STT triggers
+    noiseGateThreshold?: number
     // download missing speech models automatically in the background (default true)
     autoDownloadModels?: boolean
     // per-engine options

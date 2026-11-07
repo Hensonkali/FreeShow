@@ -9,6 +9,7 @@ import { stopAllInteractions } from "../components/drawer/pages/interactions"
 import { clone, keysToID, removeDeleted } from "../components/helpers/array"
 import { isOutCleared, updateSyncedOutputs } from "../components/helpers/output"
 import { sendMain } from "../IPC/main"
+import { syncDrive } from "./cloudSync"
 import {
     actionTags,
     actions,

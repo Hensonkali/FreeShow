@@ -1,6 +1,6 @@
 import { get, type Unsubscriber } from "svelte/store"
 import { uid } from "uid"
-import type { AiSuggestion, MatchResult } from "../../../types/ai/Ai"
+import type { AiSuggestion, MatchResult, AIProviderId } from "../../../types/ai/Ai"
 import type { ConfidenceLevels } from "../../../types/ai/AiSettings"
 import { startScripture } from "../../components/actions/apiHelper"
 import { keysToID } from "../../components/helpers/array"
@@ -10,7 +10,6 @@ import { ai, aiOutputLocked, aiSmartAction, aiSuggestions, drawerTabsData, outpu
 import { newToast } from "../../utils/common"
 import { Main } from "../../../types/IPC/Main"
 import { requestMain } from "../../IPC/main"
-import { getLLMManager } from "../llm/llmManager"
 import { logDecisionDeduped } from "../logging/decisionLog"
 import { BibleCacheManager } from "../scripture/BibleCacheManager"
 import { detectBibleVersion } from "../scripture/BibleVersionDetector"
@@ -126,7 +125,7 @@ export class AiManager {
 
         const prompt = `You are a Bible verse detection assistant. The user said: "${textChunk}"
 
-Candidate Bible verses: ${candidateVerses.length > 0 ? candidateVerses.join(', ') : 'none'}
+Candidate Bible verses: ${candidateVerses.length > 0 ? candidateVerses.join(", ") : "none"}
 
 Task: Determine if the heard text matches any of the candidate verses, or if it refers to a different verse entirely.
 - If the heard text clearly matches one of the candidates, return that verse reference.
@@ -137,24 +136,29 @@ Respond with ONLY a JSON object: {"verse": "John 3:16", "confidence": 0.85} or {
 Do not include any other text.`
 
         try {
-            const result = await requestMain(Main.AI_LLM_COMPLETE, {
-                providerId: get(ai)?.llm?.provider || 'ollama',
-                model: get(ai)?.llm?.model || 'qwen2.5:1.5b',
-                options: {
-                    systemPrompt: 'You are a Bible verse detection assistant. Respond only with valid JSON.',
-                    prompt,
-                    jsonSchema: {
-                        type: 'object',
-                        properties: {
-                            verse: { type: ['string', 'null'] },
-                            confidence: { type: 'number', minimum: 0, maximum: 1 }
+            const result = await requestMain(
+                Main.AI_LLM_COMPLETE,
+                {
+                    providerId: (get(ai)?.llm?.provider || "ollama") as AIProviderId,
+                    model: get(ai)?.llm?.model || "qwen2.5:1.5b",
+                    options: {
+                        systemPrompt: "You are a Bible verse detection assistant. Respond only with valid JSON.",
+                        prompt,
+                        jsonSchema: {
+                            type: "object",
+                            properties: {
+                                verse: { type: ["string", "null"] },
+                                confidence: { type: "number", minimum: 0, maximum: 1 }
+                            },
+                            required: ["verse", "confidence"]
                         },
-                        required: ['verse', 'confidence']
-                    },
-                    temperature: 0.1,
-                    maxTokens: 50
-                }
-            }, undefined, 15000)
+                        temperature: 0.1,
+                        maxTokens: 50
+                    }
+                },
+                undefined,
+                15000
+            )
 
             if (isCancelled?.()) return null
             if (!result?.text) return null
@@ -163,11 +167,11 @@ Do not include any other text.`
             if (!parsed.verse) return null
 
             return {
-                type: 'scripture',
+                type: "scripture",
                 content: parsed.verse,
                 confidence: Math.round((parsed.confidence ?? 0.7) * 100),
-                detector: 'llm',
-                scriptureMatchType: 'content',
+                detector: "llm",
+                scriptureMatchType: "content",
                 scriptureTranslation: activeBibleId,
                 suggestOnly: (parsed.confidence ?? 0.7) < 0.75
             }
@@ -354,7 +358,7 @@ Do not include any other text.`
         const scriptureData = get(scriptures)[activeBibleId]
         if (!scriptureData || scriptureData?.api) return null
 
-        let result = null
+        let result: any = null
         try {
             result = await requestMain(Main.AI_EMBED_QUERY, { text: textChunk, bibleId: activeBibleId, name: scriptureData.name, topK: 3 })
         } catch {

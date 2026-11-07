@@ -112,7 +112,7 @@ export const defaultSettings: { [key in SaveListSettings]: any } = {
         scripture: {
             confidence: "ask"
         }
-    },
+    }
 }
 
 export const defaultSyncedSettings: { [key in SaveListSyncedSettings]: any } = {
@@ -143,7 +143,7 @@ export const defaultSyncedSettings: { [key in SaveListSyncedSettings]: any } = {
     interactions: {},
     audioStreams: {},
     audioPlaylists: {},
-        scriptures: {
+    scriptures: {
         kjv: {
             name: "King James Version",
             api: false,

@@ -2,6 +2,7 @@
 // This is the electron entry point
 
 import fs from "fs"
+import path from "path"
 import type { Rectangle } from "electron"
 import { BrowserWindow, Menu, app, ipcMain, powerSaveBlocker, protocol, screen } from "electron"
 import { AUDIO, BLACKMAGIC, CLOUD, EXPORT, MAIN, NDI, OMT, OUTPUT, STARTUP } from "../types/Channels"
@@ -14,6 +15,7 @@ import { cloudConnect } from "./cloud/cloud"
 import { startExport } from "./data/export"
 import { cleanupProtectedCache, registerProtectedProtocol } from "./data/protected"
 import { config, setupStores } from "./data/store"
+import { getDataFolderPath } from "./utils/files"
 import { receiveMain, sendMain, sendToMain } from "./IPC/main"
 import { autoErrorReport } from "./IPC/responsesMain"
 import { receiveNDI } from "./ndi/talk"
@@ -178,43 +180,34 @@ async function startApp() {
     powerSaveBlockerId = powerSaveBlocker.start("prevent-display-sleep")
 }
 
-// Copy Bible files from public/bibles/ to <dataPath>/scriptures/ on first run
+// Copy Bible files from the bundled public/bibles/ to the app data folder (<Documents>/FreeShow/Bibles) on first run
+// so the app has Bibles offline without any download
 async function copyBiblesToDataFolder() {
     try {
-        const { app } = require("electron")
-        const dataFolderPath = path.join(app.getPath("userData"), "FreeShow")
-        const scripturesFolder = path.join(dataFolderPath, "scriptures")
+        // same place loadScripture/readBiblesFolder reads from
+        const scripturesFolder = getDataFolderPath("scriptures")
+        // in dev: repo/public/bibles, packaged: <app.asar>/public/bibles
         const sourceFolder = path.join(__dirname, "../../public/bibles")
 
-        // Create scriptures folder if it doesn't exist
-        try {
-            await fs.promises.mkdir(scripturesFolder, { recursive: true })
-        } catch (err) {
-            // Folder already exists
-        }
-
-        // Copy each .fsb file if it doesn't already exist
         const bibleFiles = ["kjv.fsb", "web.fsb", "asv.fsb"]
         for (const fileName of bibleFiles) {
             const sourcePath = path.join(sourceFolder, fileName)
             const destPath = path.join(scripturesFolder, fileName)
 
+            if (fs.existsSync(destPath)) continue // already installed
+
             try {
-                await fs.promises.access(destPath)
-                // File already exists, skip
-            } catch {
-                // File doesn't exist, copy it
-                try {
-                    await fs.promises.copyFile(sourcePath, destPath)
-                    console.info(`[bibels] Copied ${fileName} to data folder`)
-                } catch (err) {
-                    console.error(`[bibels] Failed to copy ${fileName}:`, err)
-                }
+                // read + write works from inside the asar bundle (copyFile may not)
+                const data = fs.readFileSync(sourcePath)
+                fs.writeFileSync(destPath, data)
+                console.info(`[bibels] Installed ${fileName} into data folder`)
+            } catch (err) {
+                console.error(`[bibels] Failed to install ${fileName}:`, err)
             }
         }
-        console.info("[bibels] Bible files check complete")
+        console.info("[bibels] Offline Bible install check complete")
     } catch (err) {
-        console.error("[bibels] Failed to copy Bible files:", err)
+        console.error("[bibels] Failed to install Bible files:", err)
     }
 }
 

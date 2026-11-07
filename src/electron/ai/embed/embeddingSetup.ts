@@ -1,3 +1,4 @@
+import fs from "fs"
 import path from "path"
 import { ToMain } from "../../../types/IPC/ToMain"
 import { sendToMain } from "../../IPC/main"
@@ -73,14 +74,5 @@ export class EmbeddingSetupManager {
 
     static cancelDownload() {
         this.getDownloadManager().cancel()
-    }
-
-    private static async verifyFile(filePath: string) {
-        try {
-            const { statSync, existsSync } = require("fs")
-            return existsSync(filePath) && statSync(filePath).size > 0
-        } catch {
-            return false
-        }
     }
 }

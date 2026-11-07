@@ -9,6 +9,8 @@ import { ToMain } from "../../types/IPC/ToMain"
 import type { ErrorLog, LyricSearchResult, OS } from "../../types/Main"
 import { embedDownload, embedIndex, embedQuery, embedStatus } from "../ai/embed/embedResponses"
 import { appendDecisionLog } from "../ai/logging/decisionLog"
+import { completeLLM, fetchProviderModels } from "../ai/llm/llmProviders"
+import { setAiKey } from "../ai/setup/aiKeys"
 import { aiHandleLocalSetup, LocalModelManager } from "../ai/setup/LocalModelManager"
 import { aiGetModelStatus } from "../ai/setup/status"
 import { SpeechToText } from "../ai/stt/SpeechToTextManager"
@@ -31,7 +33,7 @@ import { downloadFfmpeg, resolveFfmpegPath } from "../streaming/ffmpegManager"
 import { processAudioData, timecodeStart, timecodeStop, updateTimecodeValue } from "../timecode/timecode"
 import { apiReturnData, emitOSC, startWebSocketAndRest, stopApiListener } from "../utils/api"
 import { closeMain } from "../utils/close"
-import { addToMediaFolder, bundleMediaFiles, createFolder, getDataFolderPath, getDataFolderRoot, getFileInfo, getMediaCodec, getMediaTracks, getPaths, getSimularPaths, loadFile, loadShowsAsync, locateMediaFile, openInSystem, readExifData, readFile, readFolder, readFolderContent, selectFiles, selectFilesDialog, selectFolder, setMediaSyncFolderPath, writeFile } from "../utils/files"
+import { addToMediaFolder, bundleMediaFiles, createFolder, getDataFolderPath, getDataFolderRoot, getFileInfo, getMediaCodec, getMediaTracks, getMediaSyncFolderPath, getPaths, getSimularPaths, loadFile, loadShowsAsync, locateMediaFile, openInSystem, readExifData, readFile, readFolder, readFolderContent, selectFiles, selectFilesDialog, selectFolder, setMediaSyncFolderPath, writeFile } from "../utils/files"
 import { listGraphicsDevices } from "../utils/gpu"
 import { getMachineId } from "../utils/helpers"
 import { closeMidiInPorts, getMidiInputs, getMidiOutputs, receiveMidi, sendMidi } from "../utils/midi"
@@ -82,7 +84,6 @@ export const mainResponses: MainResponses = {
     [Main.BIBLE]: (data) => loadScripture(data),
     [Main.SHOW]: (data) => loadShow(data),
     // MAIN
-    [Main.SHOWS]: (() => loadShowsAsync()) as any,
     [Main.SHOWS]: (() => loadShowsAsync()) as any,
     [Main.URL]: (data) => openURL(data),
     [Main.LANGUAGE]: (data) => setGlobalMenu(data.strings),
@@ -218,7 +219,48 @@ export const mainResponses: MainResponses = {
     [Main.AI_EMBED_QUERY]: (data) => embedQuery(data),
     [Main.AI_EMBED_INDEX]: (data) => embedIndex(data),
     [Main.AI_EMBED_DOWNLOAD]: () => embedDownload(),
-    [Main.AI_LOG]: (data) => appendDecisionLog(data)
+    [Main.AI_LOG]: (data) => appendDecisionLog(data),
+
+    ///// OFFLINE STUBS /////
+    // the offline edition removed all online services; these keep the MainResponses contract
+    // complete and return safe empty values so no renderer call ever hangs
+    [Main.DRIVE_API_KEY]: () => null,
+    [Main.AUTO_UPDATE]: () => undefined,
+
+    // online lyric search removed
+    [Main.GET_LYRICS]: () => getLyrics(),
+    [Main.SEARCH_LYRICS]: () => searchLyrics(),
+
+    // cloud sync removed
+    [Main.CAN_SYNC]: async () => false,
+    [Main.GET_TEAMS]: async () => [],
+    [Main.CLOUD_DATA]: async () => false,
+    [Main.CLOUD_SYNC]: async () => ({ success: false, error: "Cloud sync is disabled in the offline edition" }),
+    [Main.RESTORE_CLOUD_BACKUP]: async () => ({ success: false, error: "Cloud sync is disabled in the offline edition" }),
+    [Main.GET_CONVERSATION_ID]: () => getConversationId(),
+    [Main.SEND_SOCKET_MESSAGE]: () => sendSocketMessage(),
+
+    // content providers removed
+    [Main.GET_CONTENT_PROVIDERS]: () => [],
+    [Main.GET_CONTENT_LIBRARY]: async () => [],
+    [Main.GET_PROVIDER_CONTENT]: async () => [],
+    [Main.CHECK_MEDIA_LICENSE]: async () => null,
+    [Main.PROVIDER_LOAD_SERVICES]: async () => undefined,
+    [Main.PROVIDER_CONNECTIONS]: () => ({}),
+    [Main.PROVIDER_DISCONNECT]: () => ({ success: false }),
+    [Main.PROVIDER_STARTUP_LOAD]: async () => undefined,
+    [Main.PROVIDER_FETCH_FOLDERS]: async () => [],
+
+    // Planning Center removed
+    [Main.PCO_FETCH_SERVICE_TREE]: async () => [],
+    [Main.PCO_LOAD_PLAN]: async () => undefined,
+    [Main.PCO_LIVE_GET]: async () => null,
+    [Main.PCO_PUSHER_AUTH]: async () => null,
+
+    // OnStage removed
+    [Main.ONSTAGE_GET_TEAMS]: async () => [],
+    [Main.ONSTAGE_SWITCH_TEAM]: async () => ({ success: false }),
+    [Main.ONSTAGE_LOAD_SERVICE]: async () => undefined
 }
 
 /// ///////
@@ -292,11 +334,11 @@ function getVersion() {
     }
 }
 
-async function getConversationId(teamId: string): Promise<string | null> {
+async function getConversationId(): Promise<string | null> {
     return null
 }
 
-async function sendSocketMessage(data: { churchId: string; teamId: string; displayName: string; content: string }): Promise<boolean> {
+async function sendSocketMessage(): Promise<boolean> {
     return false
 }
 
@@ -331,12 +373,12 @@ export const openURL = (url: string) => {
     return
 }
 
-async function searchLyrics({ artist, title }: { artist: string; title: string }) {
+async function searchLyrics(): Promise<LyricSearchResult[]> {
     return []
 }
 
-async function getLyrics({ song }: { song: LyricSearchResult }) {
-    return { lyrics: "", source: song.source, title: song.title, artist: song.artist }
+async function getLyrics(): Promise<{ lyrics: string; source: string; title: string; artist: string }> {
+    return { lyrics: "", source: "", title: "Unknown", artist: "" }
 }
 
 // GET DEVICE MEDIA PERMISSION
@@ -425,6 +467,11 @@ export function catchErrors() {
         if (ERROR_FILTER.find((a) => err.message.includes(a))) return
         logError(createLog(err), "main")
     })
+}
+
+// offline edition: no error reporting service is started, errors are only logged locally
+export function autoErrorReport() {
+    catchErrors()
 }
 
 export function createLog(err: Error) {

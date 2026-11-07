@@ -1,6 +1,6 @@
 import type { EmbeddingCandidate, MatchResult } from "../../../types/ai/Ai"
 import { get } from "svelte/store"
-import { ai } from "../../stores.ts"
+import { ai } from "../../stores"
 
 // Embedding matches catch synonym-heavy paraphrases that word matching misses.
 // High scores (>= 0.75) follow the normal auto-present gates (confidence floor,
@@ -19,7 +19,7 @@ export function selectEmbeddingSuggestion(results: EmbeddingCandidate[], bibleId
 
     // boost confidence for service passages
     let boostedConfidence = Math.round(first.score * 100)
-    const servicePassages = get(ai)?.servicePassages || []
+    const servicePassages = (get(ai) as any)?.servicePassages || []
     if (servicePassages.includes(first.ref)) {
         boostedConfidence = Math.min(100, boostedConfidence + 15)
     }

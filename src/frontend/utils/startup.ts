@@ -5,7 +5,7 @@ import { checkStartupActions } from "../components/actions/actions"
 import { getTimeFromInterval } from "../components/helpers/time"
 import { requestMain, requestMainMultiple, sendMain, sendMainMultiple } from "../IPC/main"
 import { cameraManager } from "../media/cameraManager"
-import { activePopup, activeProfile, alertMessage, cachePath, currentWindow, dataPath, deviceId, isDev, loaded, loadedState, os, profiles, version, windowState } from "../stores"
+import { activePopup, activeProfile, cachePath, currentWindow, dataPath, deviceId, isDev, loaded, loadedState, os, profiles, special, version, windowState } from "../stores"
 import { wait, waitUntilValueIsDefined } from "./common"
 import { getDefaultElements } from "./createData"
 import { setLanguage } from "./language"
@@ -71,8 +71,6 @@ async function startupMain() {
     const hasProfiles = Object.keys(get(profiles)).filter((a) => a !== "admin").length > 0
     if (!hasProfiles || get(activeProfile) !== null) checkStartupActions()
 
-    startTracking()
-
     await wait(2000)
 
     autoBackup()
@@ -130,7 +128,7 @@ async function getMainData() {
         [Main.GET_CACHE_PATH]: (a) => cachePath.set(a || ""),
         [Main.DEVICE_ID]: (a) => deviceId.set(a || ""),
         [Main.MAXIMIZED]: (a) => windowState.set({ ...get(windowState), maximized: a ?? false }),
-        [Main.DATA_PATH]: (a) => (a ? dataPath.set(a) : null),
+        [Main.DATA_PATH]: (a) => (a ? dataPath.set(a) : null)
     })
 }
 
@@ -146,7 +144,7 @@ async function getStoredData() {
     getDefaultElements()
 }
 
-export function contentProviderSync(startup: boolean = false, remainingOnly = false) {
+export function contentProviderSync(_startup: boolean = false, _remainingOnly = false) {
     // Cloud sync disabled - no-op
 }
 
