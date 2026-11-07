@@ -17,6 +17,10 @@ import { send } from "./request"
 
 const defaultPath = "./lang/en.json"
 
+// the English dictionary is bundled into the app: loading it must not depend
+// on whether a packaged file:// page is allowed to fetch() inside the asar
+import bundledEnglish from "../../../public/lang/en.json"
+
 // WIP right to left
 // const dir = derived(language, ($locale) => ($locale === "ar" ? "rtl" : "ltr"))
 
@@ -39,16 +43,24 @@ function setLanguage(locale = "", init = false) {
 
     loadingLocale = locale
     const url = defaultPath.replace("en", locale)
+
+    if (locale === "en") return returnedFile(JSON.parse(JSON.stringify(bundledEnglish)))
+
     fetch(url)
-        .then((response) => response.json())
+        .then((response) => {
+            if (!response.ok) throw new Error(`language ${locale}: ${response.status}`)
+            return response.json()
+        })
         .then(returnedFile)
+        .catch(() => returnedFile(JSON.parse(JSON.stringify(bundledEnglish))))
 
     async function returnedFile(messages: Dictionary) {
         if (loadingLocale !== locale) return
 
         // replace any missing keys in dictionary with fallback english string
         if (locale !== "en") {
-            const defaultStrings = await (await fetch(defaultPath)).json()
+            const defaultStrings = JSON.parse(JSON.stringify(bundledEnglish))
+
             if (loadingLocale !== locale) return
 
             Object.keys(defaultStrings).forEach((key) => {

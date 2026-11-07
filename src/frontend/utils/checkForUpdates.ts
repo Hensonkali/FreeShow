@@ -8,7 +8,8 @@ interface UpdateData {
 }
 
 export async function getUpdateData(currentVersion: string, includeBeta: boolean): Promise<UpdateData> {
-    const response = await fetch("https://api.github.com/repos/ChurchApps/freeshow/releases")
+    // this is a fork — check our release channel, never the upstream project
+    const response = await fetch("https://api.github.com/repos/Hensonkali/FreeShow/releases")
     const data = await response.json()
 
     const latestAll = data.filter((a: any) => a.draft === false)[0]

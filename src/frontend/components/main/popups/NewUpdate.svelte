@@ -13,8 +13,8 @@
     let latestVersion = $popupData.latestVersion
 
     function download() {
-        const isBeta = latestVersion.includes("-beta")
-        sendMain(Main.URL, isBeta ? "https://github.com/ChurchApps/FreeShow/releases" : "https://freeshow.app/?download")
+        // this is a fork — send users to our release channel, never to upstream builds
+        sendMain(Main.URL, "https://github.com/Hensonkali/FreeShow/releases")
 
         activePopup.set(null)
         popupData.set({})

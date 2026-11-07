@@ -99,7 +99,6 @@ import {
     version,
     videoMarkers
 } from "./../stores"
-import { checkForUpdates } from "./checkForUpdates"
 import { isMainWindow, startAutosave } from "./common"
 import { setLanguage } from "./language"
 import { startRemoteController } from "./remoteController"
@@ -313,8 +312,7 @@ const updateList: { [key in SaveListSettings | SaveListSyncedSettings]: any } = 
     customFonts: (v: any) => customFonts.set(v),
     alertUpdates: (v: any) => {
         alertUpdates.set(v !== false)
-        // make sure "special" is set before checking
-        setTimeout(() => checkForUpdates(get(version)), 50)
+        // the release-channel check no longer runs on startup (offline fork)
     },
     autoOutput: (v: any) => autoOutput.set(v),
     maxConnections: (v: any) => maxConnections.set(v),
