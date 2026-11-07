@@ -1893,7 +1893,7 @@
         "feature_voice": "Voice commands",
         "feature_llm": "LLM verification (Ollama)",
         "noise_gate": "Noise gate",
-        "noise_gate_hint": "Audio below this level is not sent for transcription. Helps on noisy rooms."
+        "noise_gate_hint": "Audio below this level is not sent for transcription. Helps on noisy rooms.",
         "paraphrase_search": "Paraphrase search",
         "paraphrase_search_hint": "Catches reworded verses with a small local AI model. Turn it off on machines with 4 GB RAM or less.",
         "undo_last": "Undo last AI action",
