@@ -202,10 +202,6 @@
         margin: 16px 0;
     }
 
-    .whitelist-blacklist {
-        margin: 16px 0;
-    }
-
     .section-title {
         font-weight: bold;
         margin-bottom: 8px;
