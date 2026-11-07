@@ -70,10 +70,8 @@
             </Link>
         </p>
     {:else if votd}
-        <p class="votd" style="padding-top: 30px" data-title="Verse of the Day [votd.org]">
-            <Link url="https://votd.org/">
-                {votd}
-            </Link>
+        <p class="votd" style="padding-top: 30px" data-title="Verse of the Day">
+            {votd}
         </p>
     {/if}
 
